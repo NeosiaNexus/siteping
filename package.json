@@ -43,9 +43,13 @@
   ],
   "author": "neosianexus",
   "license": "MIT",
+  "homepage": "https://www.npmjs.com/package/@neosianexus/siteping",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neosianexus/siteping.git"
+    "url": "git+https://github.com/NeosiaNexus/siteping.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NeosiaNexus/siteping/issues"
   },
   "dependencies": {
     "zod": "^3.24.0"

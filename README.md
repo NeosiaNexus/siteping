@@ -8,8 +8,9 @@ A lightweight feedback widget that lets your clients annotate websites during de
 Draw rectangles, leave comments, track bugs — directly on the live site.
 
 [![npm version](https://img.shields.io/npm/v/@neosianexus/siteping?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/@neosianexus/siteping)
+[![npm downloads](https://img.shields.io/npm/dm/@neosianexus/siteping?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/@neosianexus/siteping)
 [![license](https://img.shields.io/npm/l/@neosianexus/siteping?style=flat&colorA=000000&colorB=000000)](./LICENSE)
-[![build](https://img.shields.io/github/actions/workflow/status/neosianexus/siteping/ci.yml?style=flat&colorA=000000&colorB=000000)](https://github.com/neosianexus/siteping/actions)
+[![build](https://img.shields.io/github/actions/workflow/status/NeosiaNexus/siteping/ci.yml?style=flat&colorA=000000&colorB=000000)](https://github.com/NeosiaNexus/siteping/actions)
 
 [Getting Started](#getting-started) &middot; [Configuration](#configuration) &middot; [API Reference](#api-reference) &middot; [CLI](#cli) &middot; [Architecture](#architecture)
 
@@ -327,7 +328,7 @@ bun run check
 Contributions are welcome. Please open an issue first to discuss what you'd like to change.
 
 ```bash
-git clone https://github.com/neosianexus/siteping.git
+git clone https://github.com/NeosiaNexus/siteping.git
 cd siteping
 bun install
 bun run dev        # Watch mode
