@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/NeosiaNexus/siteping/compare/v0.2.1...v0.2.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* **ci:** add CI validation before publish and remove provenance ([fd4254b](https://github.com/NeosiaNexus/siteping/commit/fd4254b3f2e607634f74c2156266563a68db7052))
+
 ## [0.2.1](https://github.com/NeosiaNexus/siteping/compare/v0.2.0...v0.2.1) (2026-04-02)
 
 
