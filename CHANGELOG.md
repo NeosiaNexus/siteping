@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/NeosiaNexus/siteping/compare/v0.4.0...v0.5.0) (2026-04-02)
+
+
+### Features
+
+* **widget:** glassmorphism UI redesign ([3cb5a35](https://github.com/NeosiaNexus/siteping/commit/3cb5a355d068439afb060944ada23b55bb678d21))
+
+
+### Bug Fixes
+
+* **widget:** lint fixes for glassmorphism commit ([0c4dae4](https://github.com/NeosiaNexus/siteping/commit/0c4dae44f9ec3263f583d1232de72bbd48853ec8))
+
 ## [0.4.0](https://github.com/NeosiaNexus/siteping/compare/v0.3.0...v0.4.0) (2026-04-02)
 
 
