@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/NeosiaNexus/SitePing/compare/widget-v0.9.1...widget-v0.9.2) (2026-04-03)
+
+
+### Miscellaneous
+
+* add siteping.dev links, OG images, favicon, and error pages ([5d4db70](https://github.com/NeosiaNexus/SitePing/commit/5d4db70a55c3711285252ff6e4c99ad760a0eda6))
+
 ## [0.9.1](https://github.com/NeosiaNexus/SitePing/compare/widget-v0.9.0...widget-v0.9.1) (2026-04-03)
 
 

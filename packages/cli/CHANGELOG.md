@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/NeosiaNexus/SitePing/compare/cli-v0.4.1...cli-v0.4.2) (2026-04-03)
+
+
+### Miscellaneous
+
+* add siteping.dev links, OG images, favicon, and error pages ([5d4db70](https://github.com/NeosiaNexus/SitePing/commit/5d4db70a55c3711285252ff6e4c99ad760a0eda6))
+
 ## [0.4.1](https://github.com/NeosiaNexus/SitePing/compare/cli-v0.4.0...cli-v0.4.1) (2026-04-03)
 
 
