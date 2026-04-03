@@ -340,7 +340,10 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
 
       try {
         const result = await store.getFeedbacks(parsed.data);
-        return withCors(Response.json(result), corsHeaders);
+        return withCors(
+          Response.json(result, { headers: { "Cache-Control": "private, max-age=5" } }),
+          corsHeaders,
+        );
       } catch (error) {
         const message = actionableErrorMessage(error);
         console.error("[siteping] Failed to fetch feedbacks:", error);

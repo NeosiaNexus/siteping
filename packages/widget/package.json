@@ -3,6 +3,7 @@
   "version": "0.8.1",
   "description": "Feedback widget for client review during development — annotations, bugs, questions directly on the site",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
