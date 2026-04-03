@@ -1,11 +1,6 @@
 "use client";
 
-export default function GlobalError({
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang="en">
       <body style={{ margin: 0, background: "#030712", fontFamily: "Inter, system-ui, sans-serif" }}>
@@ -24,12 +19,8 @@ export default function GlobalError({
           <p style={{ fontSize: 14, color: "#f87171", letterSpacing: "0.1em", textTransform: "uppercase" }}>
             Critical error
           </p>
-          <h1 style={{ fontSize: 36, fontWeight: 700, marginTop: 12 }}>
-            Something went wrong
-          </h1>
-          <p style={{ fontSize: 18, color: "#9ca3af", marginTop: 16 }}>
-            An unexpected error occurred.
-          </p>
+          <h1 style={{ fontSize: 36, fontWeight: 700, marginTop: 12 }}>Something went wrong</h1>
+          <p style={{ fontSize: 18, color: "#9ca3af", marginTop: 16 }}>An unexpected error occurred.</p>
           <button
             type="button"
             onClick={reset}

@@ -21,8 +21,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "SitePing — Client feedback, pinned to the pixel",
-    description:
-      "Open-source feedback widget. Self-hosted, DOM-anchored, npm install and go.",
+    description: "Open-source feedback widget. Self-hosted, DOM-anchored, npm install and go.",
   },
   other: {
     "theme-color": "#030712",
