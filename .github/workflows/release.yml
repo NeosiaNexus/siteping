@@ -13,9 +13,10 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      widget--release_created: ${{ steps.release.outputs.widget--release_created }}
-      adapter-prisma--release_created: ${{ steps.release.outputs.adapter-prisma--release_created }}
-      cli--release_created: ${{ steps.release.outputs.cli--release_created }}
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      widget-release_created: ${{ steps.release.outputs['packages/widget--release_created'] || steps.release.outputs['widget--release_created'] }}
+      adapter-release_created: ${{ steps.release.outputs['packages/adapter-prisma--release_created'] || steps.release.outputs['adapter-prisma--release_created'] }}
+      cli-release_created: ${{ steps.release.outputs['packages/cli--release_created'] || steps.release.outputs['cli--release_created'] }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -25,7 +26,7 @@ jobs:
 
   publish-widget:
     needs: release-please
-    if: ${{ needs.release-please.outputs.widget--release_created }}
+    if: ${{ needs.release-please.outputs.widget-release_created == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -55,7 +56,7 @@ jobs:
 
   publish-adapter-prisma:
     needs: release-please
-    if: ${{ needs.release-please.outputs.adapter-prisma--release_created }}
+    if: ${{ needs.release-please.outputs.adapter-release_created == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -85,7 +86,7 @@ jobs:
 
   publish-cli:
     needs: release-please
-    if: ${{ needs.release-please.outputs.cli--release_created }}
+    if: ${{ needs.release-please.outputs.cli-release_created == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
