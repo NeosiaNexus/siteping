@@ -43,8 +43,10 @@
     "url": "git+https://github.com/NeosiaNexus/siteping.git",
     "directory": "packages/widget"
   },
+  "dependencies": {
+    "@medv/finder": "^3.2.0"
+  },
   "devDependencies": {
-    "@medv/finder": "^3.2.0",
     "@siteping/core": "workspace:*"
   }
 }

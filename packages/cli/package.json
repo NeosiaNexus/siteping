@@ -33,12 +33,10 @@
     "url": "git+https://github.com/NeosiaNexus/siteping.git",
     "directory": "packages/cli"
   },
-  "dependencies": {
+  "devDependencies": {
+    "@siteping/core": "workspace:*",
     "commander": "^13.0.0",
     "@clack/prompts": "^0.9.0",
     "@mrleebo/prisma-ast": "^0.12.0"
-  },
-  "devDependencies": {
-    "@siteping/core": "workspace:*"
   }
 }

@@ -18,7 +18,7 @@ export function generateRoute(basePath: string = process.cwd()): { created: bool
   const appDir = existsSync(join(basePath, "src", "app")) ? join(basePath, "src", "app") : join(basePath, "app");
 
   if (!existsSync(appDir)) {
-    throw new Error(`Could not find app/ directory. Are you in a Next.js App Router project?`);
+    throw new Error("Impossible de trouver le dossier app/. \u00cates-vous dans un projet Next.js App Router ?");
   }
 
   const routePath = join(appDir, "api", "siteping", "route.ts");
