@@ -1,3 +1,6 @@
+[![npm version](https://img.shields.io/npm/v/@siteping/widget)](https://www.npmjs.com/package/@siteping/widget)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
+
 # @siteping/widget
 
 **Client feedback, pinned to the pixel.**

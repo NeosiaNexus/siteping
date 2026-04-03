@@ -26,7 +26,15 @@
     "widget",
     "annotation",
     "client-review",
-    "development"
+    "development",
+    "bug-reporting",
+    "visual-feedback",
+    "website-feedback",
+    "dom-annotation",
+    "self-hosted",
+    "open-source",
+    "shadow-dom",
+    "lightweight"
   ],
   "author": "neosianexus",
   "license": "MIT",

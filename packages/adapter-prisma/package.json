@@ -25,7 +25,12 @@
     "siteping",
     "prisma",
     "adapter",
-    "feedback"
+    "feedback",
+    "api-handler",
+    "nextjs",
+    "feedback-api",
+    "self-hosted",
+    "typescript"
   ],
   "author": "neosianexus",
   "license": "MIT",
