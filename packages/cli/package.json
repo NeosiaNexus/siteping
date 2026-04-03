@@ -33,6 +33,15 @@
     "url": "git+https://github.com/NeosiaNexus/SitePing.git",
     "directory": "packages/cli"
   },
+  "bugs": {
+    "url": "https://github.com/NeosiaNexus/SitePing/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "@siteping/core": "workspace:*",
     "commander": "^13.0.0",

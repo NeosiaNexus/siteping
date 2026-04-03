@@ -4,7 +4,10 @@ test.beforeEach(async ({ page }) => {
   await page.request.get("http://localhost:3999/api/reset");
   await page.goto("http://localhost:3999");
   await page.waitForSelector("siteping-widget", { state: "attached" });
-  await page.waitForTimeout(500);
+  await page.waitForFunction(() => {
+    const host = document.querySelector("siteping-widget");
+    return host?.shadowRoot?.querySelector(".sp-fab") !== null;
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -269,7 +272,18 @@ test.describe("Full annotation flow", () => {
     });
 
     // 6. Identity modal — fill if needed
-    await page.waitForTimeout(500);
+    // Wait for either the identity modal to appear or a marker to be created
+    await page.waitForFunction(
+      () => {
+        const host = document.querySelector("siteping-widget");
+        const hasIdentity = host?.shadowRoot?.querySelector(".sp-identity-title") !== null;
+        const hasMarker =
+          (document.getElementById("siteping-markers")?.querySelectorAll("[data-feedback-id]").length ?? 0) >= 1;
+        return hasIdentity || hasMarker;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
     const identityTitle = await page.evaluate(() => {
       const host = document.querySelector("siteping-widget");
       return host?.shadowRoot?.querySelector(".sp-identity-title") !== null;
@@ -287,7 +301,15 @@ test.describe("Full annotation flow", () => {
         }
         (sr?.querySelector(".sp-btn-primary") as HTMLElement)?.click();
       });
-      await page.waitForTimeout(1000);
+      // Wait for the feedback to be submitted and a marker to appear
+      await page.waitForFunction(
+        () => {
+          const c = document.getElementById("siteping-markers");
+          return (c?.querySelectorAll("[data-feedback-id]").length ?? 0) >= 1;
+        },
+        undefined,
+        { timeout: 10000 },
+      );
     }
 
     // 7. Verify marker appeared

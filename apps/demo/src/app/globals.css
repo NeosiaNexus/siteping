@@ -4,7 +4,7 @@
   --color-accent: #173cff;
   --color-accent-light: #4d6aff;
   --color-accent-dark: #0f2cb8;
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 html {
@@ -37,5 +37,16 @@ body {
   }
   to {
     transform: translateX(0);
+  }
+}
+
+/* ── Reduced motion (needs !important to override GSAP inline styles) ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-gsap] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .marquee-track {
+    animation: none !important;
   }
 }

@@ -3,6 +3,9 @@ import type { Translations } from "./types.js";
 export const fr: Translations = {
   // Panel
   "panel.title": "Feedbacks",
+  "panel.ariaLabel": "Panneau de feedback Siteping",
+  "panel.feedbackList": "Liste des feedbacks",
+  "panel.loading": "Chargement des feedbacks",
   "panel.close": "Fermer le panneau",
   "panel.deleteAll": "Tout supprimer",
   "panel.deleteAllConfirmTitle": "Tout supprimer",
@@ -38,6 +41,7 @@ export const fr: Translations = {
   "annotator.cancel": "Annuler",
 
   // Popup
+  "popup.ariaLabel": "Formulaire de feedback",
   "popup.placeholder": "D\u00e9crivez votre retour...",
   "popup.textareaAria": "Message de feedback",
   "popup.submitHintMac": "\u2318+Entr\u00e9e pour envoyer",
@@ -56,4 +60,16 @@ export const fr: Translations = {
 
   // Markers
   "marker.approximate": "Position approximative (confiance : {confidence}%)",
+  "marker.aria": "Feedback n°{number} : {type} — {message}",
+
+  // FAB badge
+  "fab.badge": "{count} feedbacks non résolus",
+
+  // Accessibility — screen reader announcements
+  "feedback.sent.confirmation": "Feedback envoyé avec succès",
+  "feedback.error.message": "Échec de l'envoi du feedback",
+  "feedback.deleted.confirmation": "Feedback supprimé",
+
+  // Badge
+  "badge.count": "{count} feedbacks non résolus",
 };

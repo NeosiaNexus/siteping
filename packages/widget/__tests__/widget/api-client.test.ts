@@ -74,12 +74,18 @@ describe("ApiClient", () => {
   });
 
   it("retries on 5xx errors with backoff", async () => {
-    vi.mocked(fetch)
+    vi.useFakeTimers();
+
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce(new Response("", { status: 500 }))
       .mockResolvedValueOnce(new Response("", { status: 500 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: "1" }), { status: 201 }));
 
-    const result = await client.sendFeedback({
+    vi.stubGlobal("fetch", fetchMock);
+
+    const retryClient = new ApiClient(endpoint);
+    const promise = retryClient.sendFeedback({
       projectName: "test",
       type: "bug",
       message: "x",
@@ -92,8 +98,16 @@ describe("ApiClient", () => {
       clientId: "u",
     });
 
+    // Advance past first retry delay (attempt 0: 1000ms base + up to 500ms jitter)
+    await vi.advanceTimersByTimeAsync(1500);
+    // Advance past second retry delay (attempt 1: 2000ms base + up to 500ms jitter)
+    await vi.advanceTimersByTimeAsync(2500);
+
+    const result = await promise;
     expect(result).toEqual({ id: "1" });
-    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    vi.useRealTimers();
   });
 
   it("sends GET with query params", async () => {

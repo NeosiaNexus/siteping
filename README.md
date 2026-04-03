@@ -20,6 +20,8 @@ Draw rectangles, leave comments, track bugs — directly on the live site.
 
 </div>
 
+> **[See SitePing in action →](https://siteping.dev/demo)** — Draw annotations, leave feedback, track bugs directly on the live site.
+
 ---
 
 ## Why SitePing?
@@ -105,6 +107,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 }
 ```
 
+#### Vanilla JS / Any framework
+
+```html
+<script type="module">
+  import { initSiteping } from '@siteping/widget'
+
+  const widget = initSiteping({
+    endpoint: '/api/siteping',
+    projectName: 'my-project',
+    forceShow: true,
+  })
+
+  // Clean up when needed
+  // widget.destroy()
+</script>
+```
+
+The widget is framework-agnostic — it works with React, Vue, Svelte, Astro, or plain HTML.
+
 That's it. Your clients can now draw rectangles on the site and leave feedback.
 
 ---
@@ -147,9 +168,15 @@ widget.refresh()    // Refresh feedbacks from the server
 widget.destroy()    // Remove the widget and clean up all DOM elements + listeners
 
 // Event listeners (alternative to config callbacks)
-const unsub = widget.on('feedbackSent', (feedback) => { ... })
+const unsub = widget.on('feedback:sent', (feedback) => { ... })
 unsub()             // Unsubscribe
-widget.off('feedbackSent', handler)
+widget.off('feedback:sent', handler)
+
+// All public events:
+// 'feedback:sent'    — fired after a feedback is successfully submitted
+// 'feedback:deleted' — fired after a feedback is deleted (receives feedback id)
+// 'panel:open'       — fired when the feedback panel opens
+// 'panel:close'      — fired when the feedback panel closes
 ```
 
 ---
@@ -352,6 +379,12 @@ npx prisma db push
 ```
 
 If you changed your schema manually, ensure the `SitepingFeedback` and `SitepingAnnotation` models match the expected structure. Run `npx @siteping/cli doctor` to verify.
+
+### Security notes
+
+- By default, the API has **no authentication**. Anyone who knows the endpoint URL can read, create, and delete feedbacks. For production, always set the `apiKey` option in `createSitepingHandler({ prisma, apiKey: process.env.SITEPING_API_KEY })`.
+- The widget sends feedback without authentication (it runs in the browser). The `apiKey` protects admin operations (GET, PATCH, DELETE).
+- Add rate limiting at your framework/infrastructure level to prevent abuse.
 
 ### Widget styles look broken
 

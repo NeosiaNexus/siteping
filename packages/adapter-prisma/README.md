@@ -40,7 +40,7 @@ export const { GET, POST, PATCH, DELETE } = createSitepingHandler({ prisma })
 | Param | Type | Description |
 |-------|------|-------------|
 | `projectName` | `string` | **Required.** Filter by project |
-| `type` | `string` | `question` \| `changement` \| `bug` \| `autre` |
+| `type` | `string` | `question` \| `change` \| `bug` \| `other` |
 | `status` | `string` | `open` \| `resolved` |
 | `search` | `string` | Full-text search on message content |
 | `page` | `number` | Pagination (default: 1) |
@@ -55,7 +55,7 @@ All incoming requests are validated with Zod before hitting the database.
 | Field | Constraint |
 |-------|-----------|
 | `projectName` | Non-empty string |
-| `type` | `"question"` \| `"changement"` \| `"bug"` \| `"autre"` |
+| `type` | `"question"` \| `"change"` \| `"bug"` \| `"other"` |
 | `message` | 1 to **5000** characters |
 | `url` | Valid URL format |
 | `viewport` | Non-empty string |

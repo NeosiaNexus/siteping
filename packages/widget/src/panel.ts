@@ -24,6 +24,7 @@ export class Panel {
   private feedbacks: FeedbackResponse[] = [];
   private isOpen = false;
   private searchTimeout: ReturnType<typeof setTimeout> | null = null;
+  private loadController: AbortController | null = null;
 
   constructor(
     shadowRoot: ShadowRoot,
@@ -37,7 +38,7 @@ export class Panel {
   ) {
     this.root = el("div", { class: "sp-panel" });
     this.root.setAttribute("role", "complementary");
-    this.root.setAttribute("aria-label", "Siteping feedback panel");
+    this.root.setAttribute("aria-label", this.t("panel.ariaLabel"));
     this.root.setAttribute("aria-hidden", "true");
 
     // Header
@@ -115,7 +116,7 @@ export class Panel {
     // List
     this.listContainer = el("div", { class: "sp-list" });
     this.listContainer.setAttribute("role", "list");
-    this.listContainer.setAttribute("aria-label", "Liste des feedbacks");
+    this.listContainer.setAttribute("aria-label", this.t("panel.feedbackList"));
 
     this.root.appendChild(header);
     this.root.appendChild(filters);
@@ -127,9 +128,29 @@ export class Panel {
       open ? this.open() : this.close();
     });
 
-    // Escape to close
+    // Keyboard handling: Escape to close + focus trap
     shadowRoot.addEventListener("keydown", (e) => {
-      if ((e as KeyboardEvent).key === "Escape" && this.isOpen) this.close();
+      const ke = e as KeyboardEvent;
+      if (ke.key === "Escape" && this.isOpen) {
+        this.close();
+        return;
+      }
+      if (ke.key === "Tab" && this.isOpen) {
+        const focusable = this.root.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = (shadowRoot as ShadowRoot).activeElement;
+        if (ke.shiftKey && active === first) {
+          ke.preventDefault();
+          last.focus();
+        } else if (!ke.shiftKey && active === last) {
+          ke.preventDefault();
+          first.focus();
+        }
+      }
     });
 
     // Listen for marker clicks
@@ -174,7 +195,7 @@ export class Panel {
     const loading = el("div", { class: "sp-loading" });
     loading.setAttribute("role", "status");
     loading.setAttribute("aria-live", "polite");
-    loading.setAttribute("aria-label", "Chargement des feedbacks");
+    loading.setAttribute("aria-label", this.t("panel.loading"));
     const spinner = el("div", { class: "sp-spinner" });
     loading.appendChild(spinner);
     this.listContainer.appendChild(loading);
@@ -198,6 +219,11 @@ export class Panel {
   }
 
   private async loadFeedbacks(): Promise<void> {
+    // Cancel any in-flight request to prevent stale responses from overwriting newer results
+    this.loadController?.abort();
+    this.loadController = new AbortController();
+    const { signal } = this.loadController;
+
     const search = this.searchInput.value.trim() || undefined;
     const typeFilter = this.activeFilters.has("all") ? undefined : (Array.from(this.activeFilters)[0] as FeedbackType);
 
@@ -211,10 +237,12 @@ export class Panel {
 
     try {
       const { feedbacks } = await this.apiClient.getFeedbacks(this.projectName, options);
+      if (signal.aborted) return; // Stale response — a newer request superseded this one
       this.feedbacks = feedbacks;
       this.renderList();
       this.markers.render(feedbacks);
     } catch (error) {
+      if (signal.aborted) return; // Expected abort, not a real error
       if (!hasContent) this.showError();
       this.bus.emit("feedback:error", error instanceof Error ? error : new Error(String(error)));
     }
@@ -548,6 +576,7 @@ export class Panel {
   }
 
   destroy(): void {
+    this.loadController?.abort();
     if (this.searchTimeout) clearTimeout(this.searchTimeout);
     document.removeEventListener("sp-marker-click", this.onMarkerClick);
     this.root.remove();

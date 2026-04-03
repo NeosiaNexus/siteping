@@ -3,6 +3,9 @@ import type { Translations } from "./types.js";
 export const en: Translations = {
   // Panel
   "panel.title": "Feedbacks",
+  "panel.ariaLabel": "Siteping feedback panel",
+  "panel.feedbackList": "Feedback list",
+  "panel.loading": "Loading feedbacks",
   "panel.close": "Close panel",
   "panel.deleteAll": "Delete all",
   "panel.deleteAllConfirmTitle": "Delete all",
@@ -38,6 +41,7 @@ export const en: Translations = {
   "annotator.cancel": "Cancel",
 
   // Popup
+  "popup.ariaLabel": "Feedback form",
   "popup.placeholder": "Describe your feedback...",
   "popup.textareaAria": "Feedback message",
   "popup.submitHintMac": "\u2318+Enter to send",
@@ -56,4 +60,16 @@ export const en: Translations = {
 
   // Markers
   "marker.approximate": "Approximate position (confidence: {confidence}%)",
+  "marker.aria": "Feedback #{number}: {type} — {message}",
+
+  // FAB badge
+  "fab.badge": "{count} unresolved feedbacks",
+
+  // Accessibility — screen reader announcements
+  "feedback.sent.confirmation": "Feedback sent successfully",
+  "feedback.error.message": "Failed to send feedback",
+  "feedback.deleted.confirmation": "Feedback deleted",
+
+  // Badge
+  "badge.count": "{count} unresolved feedbacks",
 };

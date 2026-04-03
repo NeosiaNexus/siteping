@@ -42,17 +42,16 @@ export function launch(config: SitepingConfig): SitepingInstance {
   // Guard: only show in development (forceShow bypasses)
   if (!config.forceShow) {
     try {
-      const meta = import.meta as unknown as { env?: { MODE?: string } };
-      const proc = (globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process;
-      const mode = meta.env?.MODE ?? proc?.env?.NODE_ENV;
-      if (mode === "production") {
+      // Check for Node/bundler production environment — avoid import.meta
+      // which causes "Critical dependency" warnings in Next.js webpack builds
+      if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") {
         const reason = "production";
         console.info("[siteping] Widget not loaded: production mode detected. Use forceShow: true to override.");
         config.onSkip?.(reason);
         return skippedInstance();
       }
     } catch {
-      // import.meta access may throw in non-ESM contexts — ignore
+      // Silently ignore — browser or restricted environment
     }
   }
 
@@ -101,30 +100,41 @@ export function launch(config: SitepingConfig): SitepingInstance {
   host.style.cssText = "position:fixed;z-index:2147483647;";
   // Use open mode only for testing — closed in production for CSS isolation.
   // Shadow DOM mode is determined by environment, never by public config.
-  const isTestEnv = (() => {
-    try {
-      const meta = import.meta as unknown as { env?: { MODE?: string } };
-      if (meta.env?.MODE === "test") return true;
-    } catch {
-      // import.meta access may throw in non-ESM contexts
+  let isTestEnv = false;
+  try {
+    // Check for Node test environments — avoid import.meta
+    // which causes "Critical dependency" warnings in Next.js webpack builds
+    if (typeof process !== "undefined" && process.env?.NODE_ENV === "test") {
+      isTestEnv = true;
     }
-    try {
-      const proc = (globalThis as unknown as { process?: { env?: { NODE_ENV?: string } } }).process;
-      if (proc?.env?.NODE_ENV === "test") return true;
-    } catch {
-      // process may not exist in browser
-    }
-    return false;
-  })();
+  } catch {
+    // Silently ignore — browser or restricted environment
+  }
   const shadowMode = isTestEnv ? ("open" as const) : ("closed" as const);
   const shadow = host.attachShadow({ mode: shadowMode });
 
-  // Inject styles into Shadow DOM via adoptedStyleSheets
-  const sheet = new CSSStyleSheet();
-  sheet.replaceSync(buildStyles(colors));
-  shadow.adoptedStyleSheets = [sheet];
+  // Inject styles into Shadow DOM — adoptedStyleSheets with fallback for Safari < 16.4
+  const supportsAdoptedStyleSheets = "adoptedStyleSheets" in ShadowRoot.prototype;
+  if (supportsAdoptedStyleSheets) {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(buildStyles(colors));
+    shadow.adoptedStyleSheets = [sheet];
+  } else {
+    const style = document.createElement("style");
+    style.textContent = buildStyles(colors);
+    (shadow as unknown as DocumentFragment).appendChild(style);
+  }
 
   document.body.appendChild(host);
+
+  // Screen reader live region for feedback submission announcements
+  const liveRegion = document.createElement("div");
+  liveRegion.setAttribute("role", "status");
+  liveRegion.setAttribute("aria-live", "polite");
+  liveRegion.setAttribute("aria-atomic", "true");
+  liveRegion.style.cssText =
+    "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;";
+  document.body.appendChild(liveRegion);
 
   // Components outside Shadow DOM
   const tooltip = new Tooltip(colors, locale);
@@ -136,37 +146,47 @@ export function launch(config: SitepingConfig): SitepingInstance {
   const annotator = new Annotator(colors, bus, t);
 
   // Handle annotation completion via event bus (not DOM events)
+  // Concurrency guard: prevent duplicate submissions if user draws two annotations quickly
+  let submitting = false;
   const unsubAnnotation = bus.on("annotation:complete", async (data) => {
-    const { annotation, type, message } = data;
-
-    // Ensure identity
-    let identity = getIdentity();
-    if (!identity) {
-      identity = await promptIdentity(shadow, t);
-      if (!identity) return; // User cancelled
-      saveIdentity(identity);
-    }
-
-    const payload: FeedbackPayload = {
-      projectName: config.projectName,
-      type,
-      message,
-      url: window.location.href,
-      viewport: `${window.innerWidth}x${window.innerHeight}`,
-      userAgent: navigator.userAgent,
-      authorName: identity.name,
-      authorEmail: identity.email,
-      annotations: [annotation],
-      clientId: crypto.randomUUID(),
-    };
-
+    if (submitting) return;
+    submitting = true;
     try {
-      const response = await apiClient.sendFeedback(payload);
-      bus.emit("feedback:sent", response);
-      markers.addFeedback(response, markers.count + 1);
-      await panel.refresh();
-    } catch (error) {
-      bus.emit("feedback:error", error instanceof Error ? error : new Error(String(error)));
+      const { annotation, type, message } = data;
+
+      // Ensure identity
+      let identity = getIdentity();
+      if (!identity) {
+        identity = await promptIdentity(shadow, t);
+        if (!identity) return; // User cancelled
+        saveIdentity(identity);
+      }
+
+      const payload: FeedbackPayload = {
+        projectName: config.projectName,
+        type,
+        message,
+        url: window.location.href,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        userAgent: navigator.userAgent,
+        authorName: identity.name,
+        authorEmail: identity.email,
+        annotations: [annotation],
+        clientId: crypto.randomUUID(),
+      };
+
+      try {
+        const response = await apiClient.sendFeedback(payload);
+        bus.emit("feedback:sent", response);
+        markers.addFeedback(response, markers.count + 1);
+        liveRegion.textContent = t("feedback.sent.confirmation");
+        await panel.refresh();
+      } catch (error) {
+        bus.emit("feedback:error", error instanceof Error ? error : new Error(String(error)));
+        liveRegion.textContent = t("feedback.error.message");
+      }
+    } finally {
+      submitting = false;
     }
   });
 
@@ -196,6 +216,7 @@ export function launch(config: SitepingConfig): SitepingInstance {
       tooltip.destroy();
       bus.removeAll();
       publicBus.removeAll();
+      liveRegion.remove();
       host.remove();
     },
     open: () => {

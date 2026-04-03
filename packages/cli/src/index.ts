@@ -10,7 +10,7 @@ program
   .command("init")
   .description("Configure le schema Prisma et la route API dans votre projet")
   .action(initCommand)
-  .addHelpText("after", "\n  Examples:\n    $ siteping init\n    $ siteping init --schema prisma/schema.prisma");
+  .addHelpText("after", "\n  Examples:\n    $ siteping init");
 
 program
   .command("sync")
@@ -33,7 +33,7 @@ program
   .action(doctorCommand)
   .addHelpText(
     "after",
-    "\n  Examples:\n    $ siteping doctor\n    $ siteping doctor --url https://staging.example.com --path /api/feedback",
+    "\n  Examples:\n    $ siteping doctor\n    $ siteping doctor --url https://staging.example.com --endpoint /api/feedback",
   );
 
 program.parse();

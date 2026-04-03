@@ -41,6 +41,15 @@
     "url": "git+https://github.com/NeosiaNexus/SitePing.git",
     "directory": "packages/adapter-prisma"
   },
+  "bugs": {
+    "url": "https://github.com/NeosiaNexus/SitePing/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "zod": "^3.24.0"
   },

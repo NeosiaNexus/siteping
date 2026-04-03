@@ -259,8 +259,8 @@ export function buildStyles(colors: ThemeColors): string {
     }
 
     .sp-panel-close {
-      width: 32px;
-      height: 32px;
+      width: 44px;
+      height: 44px;
       border-radius: var(--sp-radius);
       border: none;
       background: transparent;
@@ -512,7 +512,7 @@ export function buildStyles(colors: ThemeColors): string {
 
     .sp-btn-resolve,
     .sp-btn-delete {
-      padding: 5px 14px;
+      padding: 8px 14px;
       border-radius: var(--sp-radius-full);
       border: 1px solid var(--sp-border);
       background: transparent;
@@ -808,6 +808,62 @@ export function buildStyles(colors: ThemeColors): string {
     .sp-empty-text {
       font-size: 14px;
       font-weight: 500;
+    }
+
+    /* ============================
+       Forced Colors / High Contrast
+       ============================ */
+
+    @media (forced-colors: active) {
+      .sp-fab,
+      .sp-radial-item,
+      .sp-chip,
+      .sp-card,
+      .sp-panel-close,
+      .sp-search,
+      .sp-btn-resolve,
+      .sp-btn-delete,
+      .sp-btn-delete-all,
+      .sp-btn-primary,
+      .sp-btn-ghost,
+      .sp-btn-danger,
+      .sp-card-expand,
+      .sp-input,
+      .sp-confirm-dialog {
+        border: 2px solid ButtonText !important;
+        background: Canvas !important;
+        color: ButtonText !important;
+      }
+
+      .sp-fab:focus-visible,
+      .sp-radial-item:focus-visible,
+      .sp-chip:focus-visible,
+      .sp-panel-close:focus-visible,
+      .sp-btn-resolve:focus-visible,
+      .sp-btn-delete:focus-visible,
+      .sp-btn-delete-all:focus-visible,
+      .sp-btn-primary:focus-visible,
+      .sp-btn-ghost:focus-visible,
+      .sp-btn-danger:focus-visible,
+      .sp-card-expand:focus-visible,
+      .sp-input:focus-visible,
+      .sp-search:focus-visible {
+        outline: 3px solid Highlight !important;
+      }
+
+      .sp-panel {
+        border: 2px solid ButtonText !important;
+      }
+
+      .sp-fab-badge {
+        border: 2px solid ButtonText !important;
+        background: Canvas !important;
+        color: ButtonText !important;
+      }
+
+      .sp-card-bar {
+        background: ButtonText !important;
+      }
     }
 
     ${ANIMATION_CSS}

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import type {
   FeedbackCreateInput,
   FeedbackQuery,
@@ -159,7 +160,22 @@ export interface HandlerOptions {
   prisma?: _PrismaClient;
   /** Abstract store — when provided, takes precedence over `prisma`. */
   store?: SitepingStore;
-  /** Optional API key — when set, all requests must include `Authorization: Bearer <token>` */
+  /**
+   * Optional API key for bearer-token authentication.
+   *
+   * - **When set:** every request (except OPTIONS preflight) must include an
+   *   `Authorization: Bearer {apiKey}` header. Requests without a valid token
+   *   receive a 401 Unauthorized response.
+   * - **When not set:** the API is fully public — anyone can create, read,
+   *   update, and delete feedbacks (including destructive DELETE operations).
+   * - **Recommendation:** always set `apiKey` in production environments.
+   *
+   * Security trade-off: the browser-side widget cannot use the API key without
+   * exposing it in client-side code. If the widget submits feedback directly,
+   * the POST endpoint will be unauthenticated. Consider restricting authenticated
+   * operations (PATCH, DELETE, GET) to server-side or admin-only consumers while
+   * keeping POST open via a separate middleware policy.
+   */
   apiKey?: string | undefined;
   /** Allowed CORS origins — when set, validates the Origin header */
   allowedOrigins?: string[] | undefined;
@@ -206,10 +222,25 @@ function withCors(response: Response, corsHeaders: Record<string, string>): Resp
 // ---------------------------------------------------------------------------
 
 /**
+ * Perform a constant-time string comparison to prevent timing attacks on API key validation.
+ * Returns `false` immediately when lengths differ (unavoidable length leak), but the
+ * byte-level comparison itself is timing-safe.
+ */
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
+/**
  * Create request handlers for the Siteping API endpoint.
  *
  * Accepts either a `store` (abstract) or a `prisma` client (backwards compatible).
  * When `prisma` is provided without `store`, it is wrapped in a `PrismaStore`.
+ *
+ * **Rate limiting** is not handled by this library. Apply rate limiting at the
+ * framework or reverse-proxy level (e.g. Next.js middleware, Nginx, Cloudflare).
+ * The POST endpoint in particular should be rate-limited to prevent abuse, since
+ * the widget typically calls it from unauthenticated browser contexts.
  *
  * @example Next.js App Router — `app/api/siteping/route.ts`
  * ```ts
@@ -243,13 +274,18 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
   function authenticate(request: Request): Response | null {
     if (!apiKey) return null;
     const header = request.headers.get("Authorization");
-    if (!header || header !== `Bearer ${apiKey}`) {
+    if (!header || !safeCompare(header, `Bearer ${apiKey}`)) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
     return null;
   }
 
   return {
+    /**
+     * CORS preflight handler. In production, always configure `allowedOrigins`
+     * to restrict which domains can make cross-origin requests to the API.
+     * Without it, no CORS headers are emitted and browsers will block widget requests.
+     */
     OPTIONS: (request: Request): Response => {
       const corsHeaders = buildCorsHeaders(request, allowedOrigins);
       return new Response(null, { status: 204, headers: corsHeaders });
@@ -270,6 +306,11 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
       }
 
       const data = parsed.data;
+
+      // Defense-in-depth: enforce annotation limit at handler level in addition to schema validation
+      if (data.annotations.length > 50) {
+        return withCors(Response.json({ error: "Too many annotations (max 50)" }, { status: 400 }), corsHeaders);
+      }
 
       try {
         const feedback = await store.createFeedback({
@@ -369,6 +410,9 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
 
         return withCors(Response.json(feedback), corsHeaders);
       } catch (error) {
+        if (isNotFoundError(error)) {
+          return withCors(Response.json({ error: "Feedback not found" }, { status: 404 }), corsHeaders);
+        }
         const message = actionableErrorMessage(error);
         console.error("[siteping] Failed to update feedback:", error);
         return withCors(Response.json({ error: message }, { status: 500 }), corsHeaders);

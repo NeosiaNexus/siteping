@@ -40,27 +40,107 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
 You also need a server-side adapter — see [`@siteping/adapter-prisma`](https://www.npmjs.com/package/@siteping/adapter-prisma).
 
+> **Framework-agnostic** — Works with any frontend framework (React, Vue, Svelte, Astro) or plain HTML. No framework dependency required.
+
+> **~23KB gzipped, zero framework dependencies.**
+
 ## Configuration
+
+All configuration options for `initSiteping()`:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `endpoint` | `string` | — | **Required.** Your API route (e.g. `/api/siteping`) |
+| `projectName` | `string` | — | **Required.** Scopes feedbacks to this project |
+| `position` | `'bottom-right' \| 'bottom-left'` | `'bottom-right'` | Widget FAB position |
+| `accentColor` | `string` | `'#0066ff'` | Widget accent color (any CSS color) |
+| `theme` | `'light' \| 'dark' \| 'auto'` | `'light'` | Widget color theme |
+| `locale` | `'fr' \| 'en'` | `'fr'` | Widget UI language |
+| `forceShow` | `boolean` | `false` | Show the widget in production (hidden by default) |
+| `debug` | `boolean` | `false` | Enable debug logging to console |
+
+### Event callbacks
+
+| Option | Signature | Description |
+|--------|-----------|-------------|
+| `onOpen` | `() => void` | Called when the feedback panel opens |
+| `onClose` | `() => void` | Called when the feedback panel closes |
+| `onFeedbackSent` | `(feedback) => void` | Called after a feedback is successfully submitted |
+| `onError` | `(error) => void` | Called on API or internal errors |
+| `onAnnotationStart` | `() => void` | Called when annotation drawing starts |
+| `onAnnotationEnd` | `() => void` | Called when annotation drawing ends |
+| `onSkip` | `(reason) => void` | Called when widget is skipped (production/mobile) |
 
 ```ts
 initSiteping({
-  // Required
   endpoint: '/api/siteping',
   projectName: 'my-project',
-
-  // Optional
-  position: 'bottom-right',       // 'bottom-right' | 'bottom-left'
-  forceShow: false,               // Show in production? Default: false
-
-  // Events
+  position: 'bottom-right',
+  accentColor: '#0066ff',
+  theme: 'light',
+  locale: 'fr',
+  forceShow: false,
+  debug: false,
   onOpen: () => {},
   onClose: () => {},
   onFeedbackSent: (feedback) => {},
   onError: (error) => {},
   onAnnotationStart: () => {},
   onAnnotationEnd: () => {},
+  onSkip: (reason) => {},
 })
 ```
+
+## Return value API
+
+`initSiteping()` returns a `SitepingInstance` with the following methods:
+
+```ts
+const widget = initSiteping({ ... })
+
+widget.open()       // Open the feedback panel
+widget.close()      // Close the feedback panel
+widget.refresh()    // Refresh feedbacks from the server
+widget.destroy()    // Remove the widget and clean up all DOM elements + listeners
+```
+
+## Event system
+
+Use `widget.on()` / `widget.off()` as an alternative to config callbacks:
+
+```ts
+const widget = initSiteping({ ... })
+
+// Subscribe to events
+const unsub = widget.on('feedback:sent', (feedback) => {
+  console.log('New feedback:', feedback.id)
+})
+
+widget.on('feedback:deleted', (id) => {
+  console.log('Feedback deleted:', id)
+})
+
+widget.on('panel:open', () => {
+  console.log('Panel opened')
+})
+
+widget.on('panel:close', () => {
+  console.log('Panel closed')
+})
+
+// Unsubscribe
+unsub()                              // via returned function
+widget.off('feedback:sent', handler) // via off()
+```
+
+### All public events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `feedback:sent` | `FeedbackResponse` | Fired after a feedback is successfully submitted |
+| `feedback:deleted` | `string` (feedback id) | Fired after a feedback is deleted |
+| `panel:open` | — | Fired when the feedback panel opens |
+| `panel:close` | — | Fired when the feedback panel closes |
 
 ## Features
 

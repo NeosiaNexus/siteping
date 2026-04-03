@@ -3,6 +3,7 @@ import type { FeedbackPayload, FeedbackResponse, FeedbackStatus, FeedbackType } 
 const MAX_RETRIES = 3;
 const TIMEOUT_MS = 10_000;
 const RETRY_QUEUE_KEY = "siteping_retry_queue";
+const MAX_QUEUE_SIZE = 20;
 
 // ---------------------------------------------------------------------------
 // Core fetch with retry + exponential backoff + jitter
@@ -48,6 +49,12 @@ function queueForRetry(endpoint: string, payload: FeedbackPayload): void {
   try {
     const raw = localStorage.getItem(RETRY_QUEUE_KEY);
     const queue: Array<{ endpoint: string; payload: FeedbackPayload }> = raw ? JSON.parse(raw) : [];
+
+    // Cap queue size to prevent unbounded localStorage growth
+    if (queue.length >= MAX_QUEUE_SIZE) {
+      queue.shift(); // Drop oldest entry
+    }
+
     queue.push({ endpoint, payload });
     localStorage.setItem(RETRY_QUEUE_KEY, JSON.stringify(queue));
   } catch {
@@ -65,19 +72,22 @@ export async function flushRetryQueue(endpoint: string): Promise<void> {
     const toRetry = queue.filter((e) => e.endpoint === endpoint);
     if (toRetry.length === 0) return;
 
-    const results = await Promise.allSettled(
-      toRetry.map((entry) =>
-        fetch(endpoint, {
+    // Process items sequentially to avoid overwhelming the server
+    const failed: Array<{ endpoint: string; payload: FeedbackPayload }> = [];
+    for (const entry of toRetry) {
+      try {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(entry.payload),
-        }).then((res) => ({ entry, ok: res.ok })),
-      ),
-    );
-
-    const failed = results
-      .map((r, i) => (r.status === "rejected" || !r.value.ok ? toRetry[i] : null))
-      .filter((e): e is NonNullable<typeof e> => e !== null);
+        });
+        if (!res.ok) {
+          failed.push(entry);
+        }
+      } catch {
+        failed.push(entry);
+      }
+    }
 
     // Rebuild queue: keep unrelated entries + failed retries
     const remaining = queue.filter((e) => e.endpoint !== endpoint).concat(failed);

@@ -33,11 +33,11 @@ export class Tooltip {
         max-width: 280px;
         padding: 12px 14px;
         border-radius: 14px;
-        background: rgba(255, 255, 255, 0.88);
+        background: ${this.colors.glassBgHeavy};
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
-        border: 1px solid rgba(255, 255, 255, 0.35);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid ${this.colors.glassBorder};
+        box-shadow: 0 8px 32px ${this.colors.shadow}, 0 2px 8px ${this.colors.shadow};
         font-family: "Inter", system-ui, -apple-system, sans-serif;
         pointer-events: auto;
         opacity: 0;
@@ -47,6 +47,11 @@ export class Tooltip {
         -webkit-font-smoothing: antialiased;
       `,
     });
+
+    // Respect prefers-reduced-motion
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.root.style.transition = "none";
+    }
     this.root.setAttribute("role", "tooltip");
     this.root.id = this.tooltipId;
 
@@ -56,8 +61,8 @@ export class Tooltip {
         position: absolute;
         width: 12px;
         height: 12px;
-        background: rgba(255, 255, 255, 0.88);
-        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: ${this.colors.glassBgHeavy};
+        border: 1px solid ${this.colors.glassBorder};
         transform: rotate(45deg);
         pointer-events: none;
       `,
@@ -140,7 +145,7 @@ export class Tooltip {
     });
     setText(badge, typeLabel);
 
-    const date = el("span", { style: "font-size:11px;color:#64748b;margin-left:auto;" });
+    const date = el("span", { style: `font-size:11px;color:${this.colors.textSecondary};margin-left:auto;` });
     setText(date, formatRelativeDate(feedback.createdAt, this.locale));
 
     header.appendChild(badge);
@@ -148,8 +153,7 @@ export class Tooltip {
 
     // Message body (safe — textContent only)
     const body = el("div", {
-      style:
-        "font-size:13px;line-height:1.55;color:#0f172a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;",
+      style: `font-size:13px;line-height:1.55;color:${this.colors.text};display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;`,
     });
     setText(body, feedback.message);
 
@@ -185,9 +189,9 @@ export class Tooltip {
       this.arrow.style.cssText = `
         position:absolute;
         width:12px;height:12px;
-        background:rgba(255, 255, 255, 0.88);
-        border-right:1px solid rgba(255, 255, 255, 0.35);
-        border-bottom:1px solid rgba(255, 255, 255, 0.35);
+        background:${this.colors.glassBgHeavy};
+        border-right:1px solid ${this.colors.glassBorder};
+        border-bottom:1px solid ${this.colors.glassBorder};
         transform:rotate(45deg);
         pointer-events:none;
         bottom:-6px;
@@ -198,9 +202,9 @@ export class Tooltip {
       this.arrow.style.cssText = `
         position:absolute;
         width:12px;height:12px;
-        background:rgba(255, 255, 255, 0.88);
-        border-left:1px solid rgba(255, 255, 255, 0.35);
-        border-top:1px solid rgba(255, 255, 255, 0.35);
+        background:${this.colors.glassBgHeavy};
+        border-left:1px solid ${this.colors.glassBorder};
+        border-top:1px solid ${this.colors.glassBorder};
         transform:rotate(45deg);
         pointer-events:none;
         top:-6px;

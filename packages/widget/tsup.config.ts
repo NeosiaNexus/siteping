@@ -6,7 +6,7 @@ export default defineConfig({
   platform: "browser",
   target: "es2022",
   dts: true,
-  sourcemap: false,
+  sourcemap: true,
   clean: true,
   minify: true,
   noExternal: ["@medv/finder", "@siteping/core"],

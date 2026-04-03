@@ -76,6 +76,14 @@
           "style": { "noNonNullAssertion": "off" }
         }
       }
+    },
+    {
+      "includes": ["apps/demo/src/app/globals.css"],
+      "linter": {
+        "rules": {
+          "complexity": { "noImportantStyles": "off" }
+        }
+      }
     }
   ]
 }

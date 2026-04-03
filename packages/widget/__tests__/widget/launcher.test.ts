@@ -1,0 +1,384 @@
+// @vitest-environment jsdom
+
+import type { SitepingConfig } from "@siteping/core";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// jsdom does not implement window.matchMedia — provide a stub
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
+// ---------------------------------------------------------------------------
+// Mock modules before importing launcher
+// ---------------------------------------------------------------------------
+
+// Mock the ApiClient to avoid real HTTP requests
+vi.mock("../../src/api-client.js", () => ({
+  ApiClient: vi.fn().mockImplementation(() => ({
+    sendFeedback: vi.fn().mockResolvedValue({}),
+    getFeedbacks: vi.fn().mockResolvedValue({ feedbacks: [], total: 0 }),
+    resolveFeedback: vi.fn(),
+    deleteFeedback: vi.fn(),
+    deleteAllFeedbacks: vi.fn(),
+  })),
+  flushRetryQueue: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock heavy dependencies to keep tests fast and focused on launcher logic
+vi.mock("../../src/annotator.js", () => ({
+  Annotator: vi.fn().mockImplementation(() => ({
+    destroy: vi.fn(),
+  })),
+}));
+
+vi.mock("../../src/markers.js", () => ({
+  MarkerManager: vi.fn().mockImplementation(() => ({
+    render: vi.fn(),
+    highlight: vi.fn(),
+    pinHighlight: vi.fn(),
+    addFeedback: vi.fn(),
+    destroy: vi.fn(),
+    count: 0,
+  })),
+}));
+
+vi.mock("../../src/tooltip.js", () => ({
+  Tooltip: vi.fn().mockImplementation(() => ({
+    destroy: vi.fn(),
+  })),
+}));
+
+vi.mock("../../src/styles/base.js", () => ({
+  buildStyles: vi.fn().mockReturnValue("/* styles */"),
+}));
+
+import { launch } from "../../src/launcher.js";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function defaultConfig(overrides: Partial<SitepingConfig> = {}): SitepingConfig {
+  return {
+    endpoint: "/api/siteping",
+    projectName: "test-project",
+    forceShow: true, // bypass production guard in tests
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe("launch", () => {
+  afterEach(() => {
+    // Clean up any siteping-widget elements left in the DOM
+    for (const el of document.querySelectorAll("siteping-widget")) {
+      el.remove();
+    }
+    for (const el of document.querySelectorAll('[role="status"]')) {
+      el.remove();
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Production guard
+  // -------------------------------------------------------------------------
+
+  describe("production guard", () => {
+    it("returns a no-op instance when NODE_ENV is production and forceShow is not set", () => {
+      const origEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+
+      try {
+        const instance = launch({ endpoint: "/api", projectName: "test" });
+
+        // No widget element should be added
+        const widget = document.querySelector("siteping-widget");
+        expect(widget).toBeNull();
+
+        // Should return an instance with no-op methods
+        expect(instance.destroy).toBeTypeOf("function");
+        expect(instance.open).toBeTypeOf("function");
+        expect(instance.close).toBeTypeOf("function");
+        expect(instance.refresh).toBeTypeOf("function");
+        expect(instance.on).toBeTypeOf("function");
+        expect(instance.off).toBeTypeOf("function");
+
+        // No-ops should not throw
+        instance.destroy();
+        instance.open();
+        instance.close();
+        instance.refresh();
+      } finally {
+        process.env.NODE_ENV = origEnv;
+      }
+    });
+
+    it("initializes normally when forceShow is true even in production", () => {
+      const origEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+
+      try {
+        const instance = launch(defaultConfig({ forceShow: true }));
+
+        const widget = document.querySelector("siteping-widget");
+        expect(widget).not.toBeNull();
+
+        instance.destroy();
+      } finally {
+        process.env.NODE_ENV = origEnv;
+      }
+    });
+
+    it("calls onSkip callback with 'production' reason when skipped", () => {
+      const origEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = "production";
+
+      try {
+        const onSkip = vi.fn();
+        launch({ endpoint: "/api", projectName: "test", onSkip });
+
+        expect(onSkip).toHaveBeenCalledWith("production");
+      } finally {
+        process.env.NODE_ENV = origEnv;
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Mobile guard
+  // -------------------------------------------------------------------------
+
+  describe("mobile guard", () => {
+    it("returns a no-op instance when viewport is narrow (< 768px)", () => {
+      const origWidth = window.innerWidth;
+      Object.defineProperty(window, "innerWidth", { value: 600, writable: true, configurable: true });
+
+      try {
+        const instance = launch(defaultConfig());
+
+        const widget = document.querySelector("siteping-widget");
+        expect(widget).toBeNull();
+
+        // Shouldn't throw
+        instance.destroy();
+      } finally {
+        Object.defineProperty(window, "innerWidth", { value: origWidth, writable: true, configurable: true });
+      }
+    });
+
+    it("calls onSkip with 'mobile' reason on narrow viewport", () => {
+      const origWidth = window.innerWidth;
+      Object.defineProperty(window, "innerWidth", { value: 500, writable: true, configurable: true });
+
+      try {
+        const onSkip = vi.fn();
+        launch(defaultConfig({ onSkip }));
+
+        expect(onSkip).toHaveBeenCalledWith("mobile");
+      } finally {
+        Object.defineProperty(window, "innerWidth", { value: origWidth, writable: true, configurable: true });
+      }
+    });
+
+    it("initializes normally when viewport is >= 768px", () => {
+      const origWidth = window.innerWidth;
+      Object.defineProperty(window, "innerWidth", { value: 1024, writable: true, configurable: true });
+
+      try {
+        const instance = launch(defaultConfig());
+
+        const widget = document.querySelector("siteping-widget");
+        expect(widget).not.toBeNull();
+
+        instance.destroy();
+      } finally {
+        Object.defineProperty(window, "innerWidth", { value: origWidth, writable: true, configurable: true });
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Returns API
+  // -------------------------------------------------------------------------
+
+  describe("returned API", () => {
+    let instance: ReturnType<typeof launch>;
+
+    beforeEach(() => {
+      instance = launch(defaultConfig());
+    });
+
+    afterEach(() => {
+      instance.destroy();
+    });
+
+    it("returns an object with all expected methods", () => {
+      expect(instance).toHaveProperty("destroy");
+      expect(instance).toHaveProperty("open");
+      expect(instance).toHaveProperty("close");
+      expect(instance).toHaveProperty("refresh");
+      expect(instance).toHaveProperty("on");
+      expect(instance).toHaveProperty("off");
+    });
+
+    it("open() does not throw", () => {
+      expect(() => instance.open()).not.toThrow();
+    });
+
+    it("close() does not throw", () => {
+      expect(() => instance.close()).not.toThrow();
+    });
+
+    it("refresh() does not throw", () => {
+      expect(() => instance.refresh()).not.toThrow();
+    });
+
+    it("on() returns an unsubscribe function", () => {
+      const unsub = instance.on("panel:open", () => {});
+      expect(unsub).toBeTypeOf("function");
+      // Unsubscribe should not throw
+      unsub();
+    });
+
+    it("off() does not throw", () => {
+      const listener = () => {};
+      expect(() => instance.off("panel:open", listener)).not.toThrow();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Widget DOM structure
+  // -------------------------------------------------------------------------
+
+  describe("widget DOM structure", () => {
+    it("creates a siteping-widget custom element", () => {
+      const instance = launch(defaultConfig());
+
+      const widget = document.querySelector("siteping-widget");
+      expect(widget).not.toBeNull();
+
+      instance.destroy();
+    });
+
+    it("creates a live region for screen reader announcements", () => {
+      const instance = launch(defaultConfig());
+
+      const liveRegions = document.querySelectorAll('[role="status"][aria-live="polite"]');
+      expect(liveRegions.length).toBeGreaterThan(0);
+
+      instance.destroy();
+    });
+
+    it("uses open shadow mode in test environment", () => {
+      const instance = launch(defaultConfig());
+
+      const widget = document.querySelector("siteping-widget")!;
+      expect(widget.shadowRoot).not.toBeNull();
+
+      instance.destroy();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Destroy
+  // -------------------------------------------------------------------------
+
+  describe("destroy", () => {
+    it("removes the siteping-widget element", () => {
+      const instance = launch(defaultConfig());
+      instance.destroy();
+
+      const widget = document.querySelector("siteping-widget");
+      expect(widget).toBeNull();
+    });
+
+    it("removes the live region element", () => {
+      const instance = launch(defaultConfig());
+      instance.destroy();
+
+      // After destroy, no live regions created by the widget should remain
+      // (other tests may leave their own elements, so we just check the count didn't go up)
+      const liveRegions = document.querySelectorAll('[aria-live="polite"][aria-atomic="true"]');
+      expect(liveRegions.length).toBe(0);
+    });
+
+    it("can be called multiple times without throwing", () => {
+      const instance = launch(defaultConfig());
+      instance.destroy();
+      // Second destroy should not throw (DOM elements already removed)
+      expect(() => instance.destroy()).not.toThrow();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Config callbacks
+  // -------------------------------------------------------------------------
+
+  describe("config callbacks", () => {
+    it("wires onOpen callback to bus 'open' event", () => {
+      const onOpen = vi.fn();
+      const instance = launch(defaultConfig({ onOpen }));
+
+      instance.open();
+
+      // onOpen is called via event bus when panel opens
+      expect(onOpen).toHaveBeenCalled();
+
+      instance.destroy();
+    });
+
+    it("wires onClose callback to bus 'close' event", () => {
+      const onClose = vi.fn();
+      const instance = launch(defaultConfig({ onClose }));
+
+      instance.open();
+      instance.close();
+
+      expect(onClose).toHaveBeenCalled();
+
+      instance.destroy();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Locale
+  // -------------------------------------------------------------------------
+
+  describe("locale", () => {
+    it("defaults to French locale", () => {
+      const instance = launch(defaultConfig());
+
+      const widget = document.querySelector("siteping-widget")!;
+      const shadow = widget.shadowRoot!;
+      const fabBtn = shadow.querySelector<HTMLButtonElement>(".sp-fab")!;
+      // French ARIA label
+      expect(fabBtn.getAttribute("aria-label")).toContain("Siteping");
+
+      instance.destroy();
+    });
+
+    it("supports English locale", () => {
+      const instance = launch(defaultConfig({ locale: "en" }));
+
+      const widget = document.querySelector("siteping-widget")!;
+      const shadow = widget.shadowRoot!;
+      const panel = shadow.querySelector<HTMLElement>('[role="complementary"]')!;
+      expect(panel.getAttribute("aria-label")).toBe("Siteping feedback panel");
+
+      instance.destroy();
+    });
+  });
+});

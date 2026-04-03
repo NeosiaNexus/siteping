@@ -1,3 +1,6 @@
+# TODO: Add Vercel/Netlify preview deployment for PRs
+# See: https://vercel.com/docs/deployments/preview-deployments
+
 name: CI
 
 on:
@@ -33,7 +36,7 @@ jobs:
         run: bun run check
 
       - name: Test
-        run: bun run test:run
+        run: bun run test:run -- --coverage
 
   e2e:
     runs-on: ubuntu-latest
@@ -50,7 +53,7 @@ jobs:
         run: bun run build
 
       - name: Install Playwright
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Run e2e tests
         run: bun run test:e2e

@@ -30,6 +30,7 @@ export class Annotator {
   private isActive = false;
   private popup: Popup;
   private savedOverflow = "";
+  private preActiveFocusElement: Element | null = null;
 
   constructor(
     private readonly colors: ThemeColors,
@@ -44,6 +45,9 @@ export class Annotator {
   private activate(): void {
     if (this.isActive) return;
     this.isActive = true;
+
+    // Capture the focused element before activation for keyboard annotation
+    this.preActiveFocusElement = document.activeElement;
 
     // Lock page scroll
     this.savedOverflow = document.body.style.overflow;
@@ -66,14 +70,14 @@ export class Annotator {
         position:fixed;top:0;left:0;right:0;
         z-index:2147483647;
         height:52px;
-        background:rgba(255, 255, 255, 0.82);
+        background:${this.colors.glassBg};
         backdrop-filter:blur(24px);
         -webkit-backdrop-filter:blur(24px);
-        border-bottom:1px solid rgba(255, 255, 255, 0.35);
+        border-bottom:1px solid ${this.colors.glassBorder};
         display:flex;align-items:center;justify-content:center;gap:16px;
         font-family:"Inter",system-ui,-apple-system,sans-serif;
-        font-size:14px;color:#0f172a;
-        box-shadow:0 4px 16px rgba(0,0,0,0.06);
+        font-size:14px;color:${this.colors.text};
+        box-shadow:0 4px 16px ${this.colors.shadow};
         -webkit-font-smoothing:antialiased;
       `,
     });
@@ -87,9 +91,12 @@ export class Annotator {
       `,
     });
 
-    // Add pulse animation inline
+    // Add pulse animation inline (respects prefers-reduced-motion)
     const style = document.createElement("style");
-    style.textContent = `@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`;
+    style.textContent = [
+      "@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}",
+      "@media(prefers-reduced-motion:reduce){@keyframes pulse{from,to{opacity:1}}}",
+    ].join("");
     this.toolbar.appendChild(style);
 
     const instruction = el("span", { style: "font-weight:500;letter-spacing:-0.01em;" });
@@ -98,23 +105,23 @@ export class Annotator {
     const cancelBtn = document.createElement("button");
     cancelBtn.style.cssText = `
       height:34px;padding:0 18px;border-radius:9999px;
-      border:1px solid #e2e8f0;
-      background:rgba(255,255,255,0.8);
-      color:#64748b;font-family:"Inter",system-ui,-apple-system,sans-serif;
+      border:1px solid ${this.colors.border};
+      background:${this.colors.glassBg};
+      color:${this.colors.textTertiary};font-family:"Inter",system-ui,-apple-system,sans-serif;
       font-size:13px;font-weight:500;cursor:pointer;
       transition:all 0.2s ease;
     `;
     setText(cancelBtn, this.t("annotator.cancel"));
     cancelBtn.addEventListener("click", () => this.deactivate());
     cancelBtn.addEventListener("mouseenter", () => {
-      cancelBtn.style.borderColor = "#ef4444";
-      cancelBtn.style.color = "#ef4444";
-      cancelBtn.style.background = "rgba(239,68,68,0.06)";
+      cancelBtn.style.borderColor = this.colors.typeBug;
+      cancelBtn.style.color = this.colors.typeBug;
+      cancelBtn.style.background = this.colors.typeBugBg;
     });
     cancelBtn.addEventListener("mouseleave", () => {
-      cancelBtn.style.borderColor = "#e2e8f0";
-      cancelBtn.style.color = "#64748b";
-      cancelBtn.style.background = "rgba(255,255,255,0.8)";
+      cancelBtn.style.borderColor = this.colors.border;
+      cancelBtn.style.color = this.colors.textTertiary;
+      cancelBtn.style.background = this.colors.glassBg;
     });
 
     this.toolbar.appendChild(dot);
@@ -125,6 +132,12 @@ export class Annotator {
     this.overlay.addEventListener("mousedown", this.onMouseDown);
     this.overlay.addEventListener("mousemove", this.onMouseMove);
     this.overlay.addEventListener("mouseup", this.onMouseUp);
+
+    // Keyboard annotation: Enter selects the pre-activation focused element
+    this.overlay.addEventListener("keydown", this.onOverlayKeyDown);
+
+    // Allow tab-through so keyboard users can reach underlying elements
+    this.overlay.setAttribute("tabindex", "0");
 
     // Escape to cancel
     document.addEventListener("keydown", this.onKeyDown);
@@ -137,6 +150,7 @@ export class Annotator {
     if (!this.isActive) return;
     this.isActive = false;
     this.isDrawing = false;
+    this.preActiveFocusElement = null;
 
     document.body.style.overflow = this.savedOverflow;
     document.removeEventListener("keydown", this.onKeyDown);
@@ -153,6 +167,46 @@ export class Annotator {
 
   private onKeyDown = (e: KeyboardEvent): void => {
     if (e.key === "Escape") this.deactivate();
+  };
+
+  /**
+   * Keyboard annotation: pressing Enter while the overlay is active selects
+   * the element that was focused before activation and creates a full-bounds
+   * annotation covering that element (WCAG 2.1.1 Level A).
+   */
+  private onOverlayKeyDown = async (e: KeyboardEvent): Promise<void> => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+
+    const target = this.preActiveFocusElement;
+    if (!target || !(target instanceof HTMLElement)) return;
+
+    const bounds = target.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) return;
+
+    const rectBounds = new DOMRect(bounds.x, bounds.y, bounds.width, bounds.height);
+
+    const result = await this.popup.show(rectBounds);
+    if (!result) return;
+
+    const anchor = generateAnchor(target);
+    const annotation: AnnotationPayload = {
+      anchor,
+      rect: { xPct: 0, yPct: 0, wPct: 1, hPct: 1 },
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+      viewportW: window.innerWidth,
+      viewportH: window.innerHeight,
+      devicePixelRatio: window.devicePixelRatio,
+    };
+
+    this.deactivate();
+
+    this.bus.emit("annotation:complete", {
+      annotation,
+      type: result.type,
+      message: result.message,
+    });
   };
 
   private onMouseDown = (e: MouseEvent): void => {

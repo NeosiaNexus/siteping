@@ -42,11 +42,11 @@ export class Popup {
         width:300px;
         padding:16px;
         border-radius:16px;
-        background:rgba(255, 255, 255, 0.82);
+        background:${this.colors.glassBg};
         backdrop-filter:blur(24px);
         -webkit-backdrop-filter:blur(24px);
-        border:1px solid rgba(255, 255, 255, 0.35);
-        box-shadow:0 8px 32px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.04);
+        border:1px solid ${this.colors.glassBorder};
+        box-shadow:0 8px 32px ${this.colors.shadow}, 0 2px 8px ${this.colors.shadow};
         font-family:"Inter",system-ui,-apple-system,sans-serif;
         opacity:0;
         transform:translateY(8px) scale(0.98);
@@ -55,9 +55,15 @@ export class Popup {
         -webkit-font-smoothing:antialiased;
       `,
     });
+
+    // Respect prefers-reduced-motion
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.root.style.transition = "none";
+    }
+
     this.root.setAttribute("role", "dialog");
     this.root.setAttribute("aria-modal", "true");
-    this.root.setAttribute("aria-label", "Formulaire de feedback");
+    this.root.setAttribute("aria-label", this.t("popup.ariaLabel"));
 
     // Type selector grid (2x2)
     const typeOptions: TypeOption[] = [
@@ -70,14 +76,14 @@ export class Popup {
     for (const option of typeOptions) {
       const btn = document.createElement("button");
       btn.style.cssText = `
-        height:34px;
-        border-radius:9999px;border:1px solid #e2e8f0;
-        background:rgba(255,255,255,0.8);cursor:pointer;
+        height:44px;
+        border-radius:9999px;border:1px solid ${this.colors.border};
+        background:${this.colors.glassBg};cursor:pointer;
         display:flex;align-items:center;justify-content:center;gap:5px;
         font-family:"Inter",system-ui,-apple-system,sans-serif;
-        font-size:12px;font-weight:500;color:#64748b;
+        font-size:13px;font-weight:500;color:${this.colors.textTertiary};
         transition:all 0.2s ease;
-        padding:0 10px;
+        padding:0 12px;
       `;
       const icon = parseSvg(option.icon);
       icon.setAttribute("style", "width:13px;height:13px;flex-shrink:0;");
@@ -102,8 +108,8 @@ export class Popup {
 
       btn.addEventListener("mouseleave", () => {
         if (btn.dataset.type !== this.selectedType) {
-          btn.style.background = "rgba(255,255,255,0.8)";
-          btn.style.borderColor = "#e2e8f0";
+          btn.style.background = this.colors.glassBg;
+          btn.style.borderColor = this.colors.border;
         }
       });
 
@@ -115,9 +121,9 @@ export class Popup {
     this.textarea.style.cssText = `
       width:100%;min-height:72px;max-height:152px;
       padding:10px 12px;border-radius:12px;
-      border:1px solid #e2e8f0;
-      background:rgba(255,255,255,0.85);
-      color:#0f172a;font-family:"Inter",system-ui,-apple-system,sans-serif;
+      border:1px solid ${this.colors.border};
+      background:${this.colors.glassBgHeavy};
+      color:${this.colors.text};font-family:"Inter",system-ui,-apple-system,sans-serif;
       font-size:13px;line-height:1.5;resize:vertical;
       outline:none;transition:all 0.2s ease;
       box-sizing:border-box;
@@ -128,7 +134,7 @@ export class Popup {
     // Keyboard shortcut hint
     const hint = el("div", {
       style: `
-        font-size:11px;color:#94a3b8;
+        font-size:11px;color:${this.colors.textTertiary};
         text-align:right;margin-top:4px;
         font-family:"Inter",system-ui,-apple-system,sans-serif;
         letter-spacing:0.01em;
@@ -141,12 +147,12 @@ export class Popup {
     this.textarea.addEventListener("focus", () => {
       this.textarea.style.borderColor = this.colors.accent;
       this.textarea.style.boxShadow = `0 0 0 3px ${this.colors.accent}14`;
-      this.textarea.style.background = "#fff";
+      this.textarea.style.background = this.colors.bg;
     });
     this.textarea.addEventListener("blur", () => {
-      this.textarea.style.borderColor = "#e2e8f0";
+      this.textarea.style.borderColor = this.colors.border;
       this.textarea.style.boxShadow = "none";
-      this.textarea.style.background = "rgba(255,255,255,0.85)";
+      this.textarea.style.background = this.colors.glassBgHeavy;
     });
     this.textarea.addEventListener("input", () => {
       this.updateSubmitState();
@@ -167,9 +173,9 @@ export class Popup {
     const cancelBtn = document.createElement("button");
     cancelBtn.style.cssText = `
       height:34px;padding:0 16px;border-radius:9999px;
-      border:1px solid #e2e8f0;
-      background:rgba(255,255,255,0.8);
-      color:#64748b;font-family:"Inter",system-ui,-apple-system,sans-serif;
+      border:1px solid ${this.colors.border};
+      background:${this.colors.glassBg};
+      color:${this.colors.textTertiary};font-family:"Inter",system-ui,-apple-system,sans-serif;
       font-size:13px;font-weight:500;cursor:pointer;
       transition:all 0.2s ease;
     `;
@@ -180,8 +186,8 @@ export class Popup {
       cancelBtn.style.color = this.colors.accent;
     });
     cancelBtn.addEventListener("mouseleave", () => {
-      cancelBtn.style.borderColor = "#e2e8f0";
-      cancelBtn.style.color = "#64748b";
+      cancelBtn.style.borderColor = this.colors.border;
+      cancelBtn.style.color = this.colors.textTertiary;
     });
 
     this.submitBtn = document.createElement("button");
@@ -283,9 +289,9 @@ export class Popup {
       const isActive = btn.dataset.type === type;
       const color = getTypeColor(btn.dataset.type ?? "", this.colors);
       const bgColor = getTypeBgColor(btn.dataset.type ?? "", this.colors);
-      btn.style.background = isActive ? bgColor : "rgba(255,255,255,0.8)";
-      btn.style.borderColor = isActive ? color + "60" : "#e2e8f0";
-      btn.style.color = isActive ? color : "#64748b";
+      btn.style.background = isActive ? bgColor : this.colors.glassBg;
+      btn.style.borderColor = isActive ? color + "60" : this.colors.border;
+      btn.style.color = isActive ? color : this.colors.textTertiary;
       btn.style.fontWeight = isActive ? "600" : "500";
       btn.setAttribute("aria-pressed", String(isActive));
     }
@@ -295,9 +301,10 @@ export class Popup {
   private resetTypeButtons(): void {
     const buttons = this.root.querySelectorAll<HTMLButtonElement>("button[data-type]");
     for (const btn of buttons) {
-      btn.style.background = "rgba(255,255,255,0.8)";
-      btn.style.borderColor = "#e2e8f0";
-      btn.style.color = "#64748b";
+      btn.setAttribute("aria-pressed", "false");
+      btn.style.background = this.colors.glassBg;
+      btn.style.borderColor = this.colors.border;
+      btn.style.color = this.colors.textTertiary;
       btn.style.fontWeight = "500";
     }
   }

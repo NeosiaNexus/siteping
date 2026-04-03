@@ -32,7 +32,7 @@ export class Fab {
     shadowRoot: ShadowRoot,
     config: SitepingConfig,
     private readonly bus: EventBus<WidgetEvents>,
-    t: TFunction,
+    private readonly t: TFunction,
   ) {
     const position = config.position ?? "bottom-right";
     const isRight = position === "bottom-right";
@@ -155,10 +155,14 @@ export class Fab {
     if (!this.badgeEl) {
       this.badgeEl = document.createElement("span");
       this.badgeEl.className = "sp-fab-badge";
+      this.badgeEl.setAttribute("role", "status");
+      this.badgeEl.setAttribute("aria-live", "polite");
       this.fab.appendChild(this.badgeEl);
     }
 
-    setText(this.badgeEl, count > 99 ? "99+" : String(count));
+    const displayText = count > 99 ? "99+" : String(count);
+    setText(this.badgeEl, displayText);
+    this.badgeEl.setAttribute("aria-label", this.t("fab.badge").replace("{count}", String(count)));
   }
 
   private toggle(): void {

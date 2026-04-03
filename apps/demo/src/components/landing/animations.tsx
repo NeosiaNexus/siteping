@@ -6,6 +6,17 @@ import { useEffect } from "react";
 
 export function LandingAnimations() {
   useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      // Make all GSAP-targeted elements visible immediately
+      const gsapElements = document.querySelectorAll("[data-gsap]");
+      for (const el of gsapElements) {
+        (el as HTMLElement).style.opacity = "1";
+      }
+      return;
+    }
+
     gsap.registerPlugin(ScrollTrigger);
 
     // --- Hero: immediate on load (no ScrollTrigger) ---

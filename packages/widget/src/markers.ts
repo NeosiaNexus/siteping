@@ -2,7 +2,7 @@ import type { AnchorData, FeedbackResponse, RectData } from "@siteping/core";
 import { resolveAnnotation } from "./dom/resolver.js";
 import { el, setText } from "./dom-utils.js";
 import type { EventBus, WidgetEvents } from "./events.js";
-import type { TFunction } from "./i18n/index.js";
+import { getTypeLabel, type TFunction } from "./i18n/index.js";
 import { getTypeColor, type ThemeColors } from "./styles/theme.js";
 import type { Tooltip } from "./tooltip.js";
 
@@ -103,12 +103,15 @@ export class MarkerManager {
     window.addEventListener("resize", this.resizeHandler, { passive: true });
 
     // Re-resolve after DOM changes (SPA, lazy-load).
-    // Filter out mutations from our own container and the tooltip to avoid feedback loops.
+    // Filter out widget-owned mutations and skip batches with only irrelevant changes.
     this.mutationObserver = new MutationObserver((mutations) => {
-      const isWidgetMutation = mutations.every(
-        (m) => this.container.contains(m.target) || this.tooltip.contains(m.target),
-      );
-      if (!isWidgetMutation) this.scheduleReposition();
+      let hasRelevantMutation = false;
+      for (const m of mutations) {
+        if (this.container.contains(m.target) || this.tooltip.contains(m.target)) continue;
+        hasRelevantMutation = true;
+        break;
+      }
+      if (hasRelevantMutation) this.scheduleReposition();
     });
     this.mutationObserver.observe(document.body, {
       childList: true,
@@ -126,10 +129,20 @@ export class MarkerManager {
 
   private scheduleReposition(): void {
     if (this.repositionTimer) return;
-    this.repositionTimer = setTimeout(() => {
-      this.repositionTimer = null;
-      this.repositionAll();
-    }, REPOSITION_DEBOUNCE);
+    if ("requestIdleCallback" in window) {
+      this.repositionTimer = window.requestIdleCallback(
+        () => {
+          this.repositionTimer = null;
+          this.repositionAll();
+        },
+        { timeout: REPOSITION_DEBOUNCE + 100 },
+      ) as unknown as ReturnType<typeof setTimeout>;
+    } else {
+      this.repositionTimer = setTimeout(() => {
+        this.repositionTimer = null;
+        this.repositionAll();
+      }, REPOSITION_DEBOUNCE);
+    }
   }
 
   private repositionAll(): void {
@@ -380,10 +393,12 @@ export class MarkerManager {
     marker.dataset.feedbackId = feedback.id;
     marker.setAttribute("tabindex", "0");
     marker.setAttribute("role", "button");
-    marker.setAttribute(
-      "aria-label",
-      `Feedback #${number}: ${feedback.type} — ${feedback.message.slice(0, 60)}${feedback.message.length > 60 ? "..." : ""}`,
-    );
+    const truncatedMessage = feedback.message.length > 60 ? `${feedback.message.slice(0, 60)}...` : feedback.message;
+    const ariaLabel = this.t("marker.aria")
+      .replace("{number}", String(number))
+      .replace("{type}", getTypeLabel(feedback.type, this.t))
+      .replace("{message}", truncatedMessage);
+    marker.setAttribute("aria-label", ariaLabel);
     marker.setAttribute("aria-describedby", this.tooltip.tooltipId);
     setText(marker, isResolved ? "\u2713" : String(number));
 
@@ -517,7 +532,12 @@ export class MarkerManager {
 
   destroy(): void {
     this.unpinHighlight();
-    if (this.repositionTimer) clearTimeout(this.repositionTimer);
+    if (this.repositionTimer) {
+      if ("cancelIdleCallback" in window) {
+        window.cancelIdleCallback(this.repositionTimer as unknown as number);
+      }
+      clearTimeout(this.repositionTimer);
+    }
     if (this.resizeHandler) window.removeEventListener("resize", this.resizeHandler);
     if (this.onDocumentClickForClusters) document.removeEventListener("click", this.onDocumentClickForClusters);
     this.mutationObserver?.disconnect();

@@ -2,6 +2,9 @@
 export interface Translations {
   // Panel
   "panel.title": string;
+  "panel.ariaLabel": string;
+  "panel.feedbackList": string;
+  "panel.loading": string;
   "panel.close": string;
   "panel.deleteAll": string;
   "panel.deleteAllConfirmTitle": string;
@@ -41,6 +44,7 @@ export interface Translations {
   "popup.textareaAria": string;
   "popup.submitHintMac": string;
   "popup.submitHintOther": string;
+  "popup.ariaLabel": string;
   "popup.cancel": string;
   "popup.submit": string;
 
@@ -55,6 +59,18 @@ export interface Translations {
 
   // Markers
   "marker.approximate": string;
+  "marker.aria": string;
+
+  // FAB badge
+  "fab.badge": string;
+
+  // Accessibility — screen reader announcements
+  "feedback.sent.confirmation": string;
+  "feedback.error.message": string;
+  "feedback.deleted.confirmation": string;
+
+  // Badge
+  "badge.count": string;
 }
 
 /** A translate function that returns the string for a given key. */

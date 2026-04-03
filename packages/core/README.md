@@ -21,7 +21,7 @@ This makes `@siteping/core` the **single source of truth** for:
 |------|-------------|
 | `SitepingConfig` | Widget initialization options (endpoint, projectName, position, accentColor, events) |
 | `SitepingInstance` | Return value of `initSiteping()` — contains `destroy()` |
-| `FeedbackType` | `'question' \| 'changement' \| 'bug' \| 'autre'` |
+| `FeedbackType` | `'question' \| 'change' \| 'bug' \| 'other'` |
 | `FeedbackStatus` | `'open' \| 'resolved'` |
 | `FeedbackPayload` | Shape of the POST request body sent by the widget |
 | `FeedbackResponse` | Shape of feedback objects returned by the API |
