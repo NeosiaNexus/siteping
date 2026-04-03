@@ -3,9 +3,9 @@
 
 # @siteping/adapter-prisma
 
-Server-side Prisma adapter for [Siteping](https://github.com/NeosiaNexus/siteping) — handles API request validation and database persistence.
+Server-side Prisma adapter for [Siteping](https://github.com/NeosiaNexus/SitePing) — handles API request validation and database persistence.
 
-Part of the [@siteping](https://github.com/NeosiaNexus/siteping) monorepo.
+Part of the [@siteping](https://github.com/NeosiaNexus/SitePing) monorepo.
 
 ## Install
 
@@ -95,4 +95,4 @@ npx prisma db push
 
 ## License
 
-[MIT](https://github.com/NeosiaNexus/siteping/blob/main/LICENSE)
+[MIT](https://github.com/NeosiaNexus/SitePing/blob/main/LICENSE)

@@ -27,10 +27,10 @@
   ],
   "author": "neosianexus",
   "license": "MIT",
-  "homepage": "https://github.com/NeosiaNexus/siteping/tree/main/packages/cli",
+  "homepage": "https://github.com/NeosiaNexus/SitePing/tree/main/packages/cli",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeosiaNexus/siteping.git",
+    "url": "git+https://github.com/NeosiaNexus/SitePing.git",
     "directory": "packages/cli"
   },
   "devDependencies": {

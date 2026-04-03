@@ -1,0 +1,11 @@
+# Default — catch-all
+* @NeosiaNexus
+
+# Packages
+packages/widget/    @NeosiaNexus
+packages/adapter-prisma/ @NeosiaNexus
+packages/cli/       @NeosiaNexus
+packages/core/      @NeosiaNexus
+
+# CI/CD & config
+.github/            @NeosiaNexus

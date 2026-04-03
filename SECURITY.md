@@ -15,7 +15,7 @@ Only the latest published version of each `@siteping/*` package receives securit
 
 Instead, please report vulnerabilities through one of these channels:
 
-1. **GitHub Security Advisories** (preferred) -- [Report a vulnerability](https://github.com/NeosiaNexus/siteping/security/advisories/new)
+1. **GitHub Security Advisories** (preferred) -- [Report a vulnerability](https://github.com/NeosiaNexus/SitePing/security/advisories/new)
 2. **Email** -- Send details to **security@neosianexus.dev**
 
 ### What to include

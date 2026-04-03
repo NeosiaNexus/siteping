@@ -1,4 +1,4 @@
-# Contributing to siteping
+# Contributing to SitePing
 
 Thanks for your interest in contributing! This guide covers everything you need to get started.
 
@@ -11,8 +11,8 @@ Thanks for your interest in contributing! This guide covers everything you need 
 ## Setup
 
 ```bash
-git clone https://github.com/NeosiaNexus/siteping.git
-cd siteping
+git clone https://github.com/NeosiaNexus/SitePing.git
+cd SitePing
 bun install
 ```
 
@@ -88,7 +88,7 @@ packages/adapter-drizzle/
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeosiaNexus/siteping.git",
+    "url": "git+https://github.com/NeosiaNexus/SitePing.git",
     "directory": "packages/adapter-drizzle"
   },
   // If you import from @siteping/core:

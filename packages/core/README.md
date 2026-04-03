@@ -2,7 +2,7 @@
 
 **Internal package** -- shared types and schema definitions for all `@siteping/*` packages.
 
-Part of the [@siteping](https://github.com/NeosiaNexus/siteping) monorepo.
+Part of the [@siteping](https://github.com/NeosiaNexus/SitePing) monorepo.
 
 ## Internal Package
 
@@ -51,4 +51,4 @@ This inlines the raw TS exports at build time -- no separate build step needed f
 
 ## License
 
-[MIT](https://github.com/NeosiaNexus/siteping/blob/main/LICENSE)
+[MIT](https://github.com/NeosiaNexus/SitePing/blob/main/LICENSE)

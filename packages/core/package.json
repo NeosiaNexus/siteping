@@ -12,7 +12,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NeosiaNexus/siteping.git",
+    "url": "git+https://github.com/NeosiaNexus/SitePing.git",
     "directory": "packages/core"
   }
 }

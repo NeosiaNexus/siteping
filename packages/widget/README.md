@@ -7,7 +7,7 @@
 
 A lightweight feedback widget that lets your clients annotate websites during development. Draw rectangles, leave comments, track bugs — directly on the live site.
 
-Part of the [@siteping](https://github.com/NeosiaNexus/siteping) monorepo.
+Part of the [@siteping](https://github.com/NeosiaNexus/SitePing) monorepo.
 
 ## Install
 
@@ -79,4 +79,4 @@ initSiteping({
 
 ## License
 
-[MIT](https://github.com/NeosiaNexus/siteping/blob/main/LICENSE)
+[MIT](https://github.com/NeosiaNexus/SitePing/blob/main/LICENSE)

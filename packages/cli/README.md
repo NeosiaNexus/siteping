@@ -3,9 +3,9 @@
 
 # @siteping/cli
 
-CLI tool to set up [Siteping](https://github.com/NeosiaNexus/siteping) in your project — scaffolds Prisma schema and API routes.
+CLI tool to set up [Siteping](https://github.com/NeosiaNexus/SitePing) in your project — scaffolds Prisma schema and API routes.
 
-Part of the [@siteping](https://github.com/NeosiaNexus/siteping) monorepo.
+Part of the [@siteping](https://github.com/NeosiaNexus/SitePing) monorepo.
 
 ## Usage
 
@@ -67,4 +67,4 @@ npx @siteping/cli doctor --url http://localhost:3000
 
 ## License
 
-[MIT](https://github.com/NeosiaNexus/siteping/blob/main/LICENSE)
+[MIT](https://github.com/NeosiaNexus/SitePing/blob/main/LICENSE)

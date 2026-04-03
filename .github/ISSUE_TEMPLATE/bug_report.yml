@@ -60,8 +60,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: siteping version
-      description: The version of siteping you are using.
+      label: SitePing version
+      description: The version of SitePing you are using.
       placeholder: "e.g. 0.1.0"
     validations:
       required: false

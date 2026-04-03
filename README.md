@@ -1,6 +1,6 @@
 <div align="center">
 
-<h1>siteping</h1>
+<h1>SitePing</h1>
 
 **Client feedback, pinned to the pixel.**
 
@@ -10,7 +10,7 @@ Draw rectangles, leave comments, track bugs — directly on the live site.
 [![npm version](https://img.shields.io/npm/v/@siteping/widget?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/@siteping/widget)
 [![npm downloads](https://img.shields.io/npm/dm/@siteping/widget?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/@siteping/widget)
 [![license](https://img.shields.io/npm/l/@siteping/widget?style=flat&colorA=000000&colorB=000000)](./LICENSE)
-[![build](https://img.shields.io/github/actions/workflow/status/NeosiaNexus/siteping/ci.yml?style=flat&colorA=000000&colorB=000000)](https://github.com/NeosiaNexus/siteping/actions)
+[![build](https://img.shields.io/github/actions/workflow/status/NeosiaNexus/SitePing/ci.yml?style=flat&colorA=000000&colorB=000000)](https://github.com/NeosiaNexus/SitePing/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/@siteping/widget)](https://bundlephobia.com/package/@siteping/widget)
 
@@ -20,18 +20,18 @@ Draw rectangles, leave comments, track bugs — directly on the live site.
 
 ---
 
-## Why siteping?
+## Why SitePing?
 
-Stop chasing client feedback across Slack threads, email chains, and Notion docs. Siteping gives your clients a **contextual** way to leave feedback — anchored to the exact element they're looking at.
+Stop chasing client feedback across Slack threads, email chains, and Notion docs. SitePing gives your clients a **contextual** way to leave feedback — anchored to the exact element they're looking at.
 
-### siteping vs. the alternatives
+### SitePing vs. the alternatives
 
-| | siteping | Marker.io | BugHerd |
+| | SitePing | Marker.io | BugHerd |
 |---|---|---|---|
 | **Self-hosted** | Yes — your DB, your data | No (SaaS) | No (SaaS) |
-| **npm package** | `npm install` and go | Script tag only | Script tag only |
+| **npm package** | `npm install` and go | npm + script tag | Script tag only |
 | **Framework-native** | First-class Next.js support | Framework-agnostic | Framework-agnostic |
-| **Pricing** | Free & open source | From $39/mo | From $41/mo |
+| **Pricing** | Free & open source | From $39/mo | From $39/mo |
 | **DOM-anchored annotations** | Multi-selector (CSS + XPath + text) | Screenshot-based | Pin-based |
 | **Annotations survive layout changes** | Yes (percentage-relative rects) | No (pixel coordinates) | Partially |
 | **Customizable** | Full control (accent color, position, events) | Limited | Limited |
@@ -313,7 +313,7 @@ bun run check
 
 | Suite | Tests | What it covers |
 |-------|-------|----------------|
-| Unit (Vitest) | 188 | Zod validation, API handlers, EventBus, API client retry, identity persistence, theme normalization, DOM anchoring, resolver, fuzzy matching, fingerprinting, XPath, text context |
+| Unit (Vitest) | 238 | Zod validation, API handlers, EventBus, API client retry, identity persistence, theme normalization, DOM anchoring, resolver, fuzzy matching, fingerprinting, XPath, text context, i18n |
 | E2E (Playwright) | 17 | Full browser: widget injection, FAB, panel, annotation draw, popup submit, marker creation, API persistence, cleanup |
 
 ---
@@ -354,7 +354,7 @@ The widget renders inside a **closed Shadow DOM**, so host page styles cannot le
 - [ ] MutationObserver for SPA re-anchoring
 - [ ] Webhook notifications (Discord, Slack)
 - [ ] Screenshot fallback when re-anchoring fails
-- [ ] Multi-language support (i18n)
+- [x] Multi-language support (i18n)
 - [ ] Nuxt / Astro / SvelteKit support
 
 ---
@@ -364,8 +364,8 @@ The widget renders inside a **closed Shadow DOM**, so host page styles cannot le
 Contributions are welcome. Please open an issue first to discuss what you'd like to change.
 
 ```bash
-git clone https://github.com/NeosiaNexus/siteping.git
-cd siteping
+git clone https://github.com/NeosiaNexus/SitePing.git
+cd SitePing
 bun install
 bun run dev        # Watch mode
 bun run test       # Tests in watch mode
