@@ -1,3 +1,6 @@
+[![npm version](https://img.shields.io/npm/v/@siteping/adapter-prisma)](https://www.npmjs.com/package/@siteping/adapter-prisma)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
+
 # @siteping/adapter-prisma
 
 Server-side Prisma adapter for [Siteping](https://github.com/NeosiaNexus/siteping) — handles API request validation and database persistence.

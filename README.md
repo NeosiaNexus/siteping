@@ -11,6 +11,8 @@ Draw rectangles, leave comments, track bugs — directly on the live site.
 [![npm downloads](https://img.shields.io/npm/dm/@siteping/widget?style=flat&colorA=000000&colorB=000000)](https://www.npmjs.com/package/@siteping/widget)
 [![license](https://img.shields.io/npm/l/@siteping/widget?style=flat&colorA=000000&colorB=000000)](./LICENSE)
 [![build](https://img.shields.io/github/actions/workflow/status/NeosiaNexus/siteping/ci.yml?style=flat&colorA=000000&colorB=000000)](https://github.com/NeosiaNexus/siteping/actions)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@siteping/widget)](https://bundlephobia.com/package/@siteping/widget)
 
 [Getting Started](#getting-started) &middot; [Configuration](#configuration) &middot; [API Reference](#api-reference) &middot; [CLI](#cli) &middot; [Architecture](#architecture)
 

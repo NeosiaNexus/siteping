@@ -1,3 +1,6 @@
+[![npm version](https://img.shields.io/npm/v/@siteping/cli)](https://www.npmjs.com/package/@siteping/cli)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
+
 # @siteping/cli
 
 CLI tool to set up [Siteping](https://github.com/NeosiaNexus/siteping) in your project — scaffolds Prisma schema and API routes.

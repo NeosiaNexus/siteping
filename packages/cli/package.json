@@ -1,7 +1,7 @@
 {
   "name": "@siteping/cli",
   "version": "0.3.0",
-  "description": "CLI pour configurer Siteping dans votre projet",
+  "description": "CLI tool to set up Siteping in your project",
   "type": "module",
   "bin": {
     "siteping": "./dist/index.js"
@@ -18,7 +18,12 @@
     "siteping",
     "cli",
     "prisma",
-    "setup"
+    "setup",
+    "developer-tools",
+    "feedback",
+    "nextjs",
+    "prisma-generator",
+    "typescript"
   ],
   "author": "neosianexus",
   "license": "MIT",

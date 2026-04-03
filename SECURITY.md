@@ -2,39 +2,36 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| Latest  | Yes       |
-| < Latest | No       |
+| Version | Supported          |
+|---------|--------------------|
+| latest  | :white_check_mark: |
+| < latest | :x:               |
 
 Only the latest published version of each `@siteping/*` package receives security updates.
 
 ## Reporting a Vulnerability
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+**Do not open a public issue for security vulnerabilities.**
 
-Instead, use one of the following methods:
+Instead, please report vulnerabilities through one of these channels:
 
-### GitHub Security Advisory (preferred)
+1. **GitHub Security Advisories** (preferred) -- [Report a vulnerability](https://github.com/NeosiaNexus/siteping/security/advisories/new)
+2. **Email** -- Send details to **security@neosianexus.dev**
 
-Report via [GitHub Security Advisories](https://github.com/NeosiaNexus/siteping/security/advisories/new). This allows private discussion and coordinated disclosure.
+### What to include
 
-### Email
-
-Send an email to **security@neosianexus.dev** with:
-
-- A description of the vulnerability
+- Description of the vulnerability
 - Steps to reproduce
 - Affected package(s) and version(s)
-- Impact assessment (if known)
+- Potential impact
 
 ## Response Timeline
 
 | Step | Timeline |
 |------|----------|
 | Acknowledgment | Within 48 hours |
-| Initial assessment | Within 5 business days |
-| Fix or mitigation | Within 30 days (critical), 90 days (non-critical) |
+| Initial assessment | Within 1 week |
+| Fix release | Within 30 days (critical), 90 days (non-critical) |
 
 ## Disclosure Policy
 
