@@ -4,7 +4,7 @@ import { initCommand } from "./commands/init.js";
 import { statusCommand } from "./commands/status.js";
 import { syncCommand } from "./commands/sync.js";
 
-const program = new Command().name("siteping").description("CLI pour configurer @siteping/*").version("0.1.0"); // x-release-please-version
+const program = new Command().name("siteping").description("CLI pour configurer @siteping/*").version("0.2.0"); // x-release-please-version
 
 program.command("init").description("Configure le schema Prisma et la route API dans votre projet").action(initCommand);
 
