@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/NeosiaNexus/siteping/compare/v0.5.0...v0.6.0) (2026-04-03)
+
+
+### Features
+
+* **widget:** delete feedback, delete all, search/error fixes ([3a22dbe](https://github.com/NeosiaNexus/siteping/commit/3a22dbeceab851b25ce649b2bf6fedc43db073c3))
+* **widget:** pro-level DOM anchoring, click-to-expand clusters, UX polish ([45484c9](https://github.com/NeosiaNexus/siteping/commit/45484c9aeb6a13a42a291e20e6a11e76f7091fe6))
+
+
+### Bug Fixes
+
+* **widget:** lint fixes for delete feature ([cedc4e8](https://github.com/NeosiaNexus/siteping/commit/cedc4e86043b3e60df4353fc0089563f10ff79a9))
+
 ## [0.5.0](https://github.com/NeosiaNexus/siteping/compare/v0.4.0...v0.5.0) (2026-04-02)
 
 
