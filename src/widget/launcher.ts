@@ -111,6 +111,16 @@ export function launch(config: SitepingConfig): SitepingInstance {
     }
   });
 
+  // Load markers immediately on page load
+  apiClient
+    .getFeedbacks(config.projectName, { limit: 50 })
+    .then(({ feedbacks }) => {
+      markers.render(feedbacks);
+    })
+    .catch(() => {
+      // Silently fail — markers will load when panel opens
+    });
+
   // Flush retry queue on load
   flushRetryQueue(config.endpoint);
 

@@ -57,19 +57,19 @@ export class Popup {
       `,
     });
 
-    // Type selector row
-    const typeRow = el("div", { style: "display:flex;gap:6px;margin-bottom:12px;" });
+    // Type selector grid (2x2)
+    const typeRow = el("div", { style: "display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;" });
     for (const option of TYPE_OPTIONS) {
       const btn = document.createElement("button");
       btn.style.cssText = `
-        flex:1;height:34px;
+        height:34px;
         border-radius:9999px;border:1px solid #e2e8f0;
         background:rgba(255,255,255,0.8);cursor:pointer;
-        display:flex;align-items:center;justify-content:center;gap:4px;
+        display:flex;align-items:center;justify-content:center;gap:5px;
         font-family:"Inter",system-ui,-apple-system,sans-serif;
-        font-size:11px;font-weight:500;color:#64748b;
+        font-size:12px;font-weight:500;color:#64748b;
         transition:all 0.2s ease;
-        padding:0 6px;
+        padding:0 10px;
       `;
       const icon = parseSvg(option.icon);
       icon.setAttribute("style", "width:13px;height:13px;flex-shrink:0;");

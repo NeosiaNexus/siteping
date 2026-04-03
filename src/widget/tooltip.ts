@@ -200,6 +200,11 @@ export class Tooltip {
     }
   }
 
+  /** Check if a DOM node belongs to this tooltip (for MutationObserver filtering). */
+  contains(node: Node): boolean {
+    return this.root.contains(node);
+  }
+
   destroy(): void {
     this.cancelShow();
     this.cancelHide();

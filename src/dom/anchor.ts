@@ -27,7 +27,7 @@ export function generateAnchor(element: Element): AnchorData {
   const xpath = generateXPath(element);
 
   const rawText = element.textContent?.trim() ?? "";
-  const textSnippet = rawText.slice(0, 50);
+  const textSnippet = rawText.slice(0, 120);
 
   const textPrefix = adjacentText(element, "before");
   const textSuffix = adjacentText(element, "after");

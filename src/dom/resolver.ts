@@ -21,39 +21,59 @@ export interface ResolvedAnnotation {
 /** Max elements to scan during smart fallback. */
 const MAX_SCAN_CANDIDATES = 300;
 
+/** Minimum fuzzy text match score for CSS/XPath verification. */
+const TEXT_MATCH_THRESHOLD = 0.3;
+
+/**
+ * Verify that a resolved element's text content matches the stored snippet.
+ * If no snippet is stored, returns true (no verification possible).
+ * Uses fuzzy matching to tolerate minor text changes.
+ */
+function textMatches(el: Element, anchor: AnchorData): boolean {
+  if (!anchor.textSnippet) return true;
+  const text = (el.textContent?.trim() ?? "").slice(0, 500);
+  return fuzzyIncludes(text, anchor.textSnippet, 0.5) > TEXT_MATCH_THRESHOLD;
+}
+
 /**
  * Re-anchor an annotation using a multi-level fallback strategy
- * with confidence scoring.
+ * with text verification and confidence scoring.
  *
  * Resolution order:
- * 1. getElementById — confidence 1.0
- * 2. CSS selector (querySelector) — confidence 0.95
- * 3. XPath (document.evaluate) — confidence 0.9
- * 4. Smart scan (fingerprint + text + prefix/suffix + neighbor) — confidence varies
+ * 1. getElementById + text verification — confidence 1.0
+ * 2. CSS selector + text verification — confidence 0.95
+ * 3. XPath + text verification — confidence 0.9
+ * 4. Smart scan (fingerprint + text + prefix/suffix + neighbor) — up to 0.85
  *
+ * Text verification prevents false matches when DOM elements are reordered.
  * Returns null if all strategies fail (annotation is orphaned).
  */
 export function resolveAnchor(anchor: AnchorData): AnchorResolution | null {
-  // Level 1: Element ID (most stable)
+  // Level 1: Element ID (most stable, still verify text)
   if (anchor.elementId) {
     const el = document.getElementById(anchor.elementId);
-    if (el && el.tagName === anchor.elementTag) return { element: el, confidence: 1.0, strategy: "id" };
+    if (el && el.tagName === anchor.elementTag && textMatches(el, anchor)) {
+      return { element: el, confidence: 1.0, strategy: "id" };
+    }
   }
 
-  // Level 2: CSS Selector
+  // Level 2: CSS Selector (with text verification)
   try {
     const el = document.querySelector(anchor.cssSelector);
-    if (el && el.tagName === anchor.elementTag) return { element: el, confidence: 0.95, strategy: "css" };
+    if (el && el.tagName === anchor.elementTag && textMatches(el, anchor)) {
+      return { element: el, confidence: 0.95, strategy: "css" };
+    }
   } catch {
     // Invalid selector — skip
   }
 
-  // Level 3: XPath
+  // Level 3: XPath (with text verification)
   try {
     const result = document.evaluate(anchor.xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
     const el = result.singleNodeValue;
-    if (el instanceof Element && el.tagName === anchor.elementTag)
+    if (el instanceof Element && el.tagName === anchor.elementTag && textMatches(el, anchor)) {
       return { element: el, confidence: 0.9, strategy: "xpath" };
+    }
   } catch {
     // Invalid XPath — skip
   }
@@ -102,8 +122,8 @@ function smartScan(anchor: AnchorData): AnchorResolution | null {
  * Score a candidate element against all stored anchor signals.
  *
  * Dynamic weighting — only active signals contribute, then normalized:
- * - Text snippet (fuzzy substring match): weight 35
- * - Fingerprint (structural match): weight 25
+ * - Text snippet (fuzzy substring match): weight 40  (most reliable for reordering)
+ * - Fingerprint (structural match): weight 20
  * - Prefix/suffix context: weight 20
  * - Neighbor text: weight 20
  */
@@ -114,16 +134,16 @@ function scoreCandidate(candidate: Element, anchor: AnchorData): number {
   // Truncate to avoid O(n*m) explosion on huge text nodes
   const candidateText = (candidate.textContent?.trim() ?? "").slice(0, 500);
 
-  // --- Text snippet (weight 35) ---
+  // --- Text snippet (weight 40 — most important for reordered elements) ---
   if (anchor.textSnippet) {
-    totalWeight += 35;
-    score += fuzzyIncludes(candidateText, anchor.textSnippet, 0.5) * 35;
+    totalWeight += 40;
+    score += fuzzyIncludes(candidateText, anchor.textSnippet, 0.5) * 40;
   }
 
-  // --- Fingerprint (weight 25) ---
+  // --- Fingerprint (weight 20) ---
   if (anchor.fingerprint) {
-    totalWeight += 25;
-    score += scoreFingerprint(candidate, anchor.fingerprint) * 25;
+    totalWeight += 20;
+    score += scoreFingerprint(candidate, anchor.fingerprint) * 20;
   }
 
   // --- Prefix/suffix context (weight 20) ---
