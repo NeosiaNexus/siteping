@@ -29,7 +29,7 @@ export interface SyncResult {
  */
 export function syncPrismaModels(schemaPath: string = DEFAULT_SCHEMA_PATH): SyncResult {
   if (!existsSync(schemaPath)) {
-    throw new Error(`Schema file not found: ${schemaPath}`);
+    throw new Error(`Fichier schema introuvable : ${schemaPath}`);
   }
 
   const source = readFileSync(schemaPath, "utf-8");
@@ -139,7 +139,7 @@ function describeChange(existing: Field, expected: Field): string {
     parts.push(`${existing.fieldType} → ${expected.fieldType}`);
   }
   if ((existing.optional ?? false) !== (expected.optional ?? false)) {
-    parts.push(expected.optional ? "required → optional" : "optional → required");
+    parts.push(expected.optional ? "requis \u2192 optionnel" : "optionnel \u2192 requis");
   }
 
   const existingAttrs = new Set((existing.attributes ?? []).map((a) => a.name));
@@ -151,7 +151,7 @@ function describeChange(existing: Field, expected: Field): string {
     if (!expectedAttrs.has(attr)) parts.push(`-@${attr}`);
   }
 
-  return parts.join(", ") || "attributes changed";
+  return parts.join(", ") || "attributs modifi\u00e9s";
 }
 
 /** Format a field definition for display. */

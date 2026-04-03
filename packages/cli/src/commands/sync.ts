@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
 import * as p from "@clack/prompts";
 import { syncPrismaModels } from "../generators/prisma.js";
+import { findPrismaSchema } from "../utils/find-schema.js";
 
 export function syncCommand(options: { schema?: string }): void {
   const cwd = process.cwd();
@@ -44,11 +44,3 @@ export function syncCommand(options: { schema?: string }): void {
   }
 }
 
-function findPrismaSchema(cwd: string): string | null {
-  const candidates = [
-    join(cwd, "prisma", "schema.prisma"),
-    join(cwd, "schema.prisma"),
-    join(cwd, "prisma", "schema", "schema.prisma"),
-  ];
-  return candidates.find((p) => existsSync(p)) ?? null;
-}

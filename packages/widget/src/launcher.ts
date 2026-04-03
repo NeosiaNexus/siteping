@@ -214,6 +214,11 @@ function promptIdentity(shadowRoot: ShadowRoot): Promise<Identity | null> {
       const name = nameInput.value.trim();
       const email = emailInput.value.trim();
       if (!name || !email) return;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        emailInput.style.borderColor = "#ef4444";
+        return;
+      }
       backdrop.style.opacity = "0";
       modal.style.transform = "translateY(12px) scale(0.97)";
       setTimeout(() => {

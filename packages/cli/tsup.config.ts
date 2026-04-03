@@ -7,7 +7,7 @@ export default defineConfig({
   target: "node18",
   banner: { js: "#!/usr/bin/env node" },
   dts: false,
-  sourcemap: false,
+  sourcemap: true,
   clean: true,
-  noExternal: ["@siteping/core"],
+  noExternal: ["@siteping/core", "commander", "@clack/prompts", "@mrleebo/prisma-ast"],
 });

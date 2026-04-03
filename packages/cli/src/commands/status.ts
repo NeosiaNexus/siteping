@@ -4,17 +4,9 @@ import * as p from "@clack/prompts";
 import type { Field, Model } from "@mrleebo/prisma-ast";
 import { getSchema } from "@mrleebo/prisma-ast";
 import { SITEPING_MODELS } from "@siteping/core";
+import { findPrismaSchema } from "../utils/find-schema.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────
-
-function findPrismaSchema(cwd: string): string | null {
-  const candidates = [
-    join(cwd, "prisma", "schema.prisma"),
-    join(cwd, "schema.prisma"),
-    join(cwd, "prisma", "schema", "schema.prisma"),
-  ];
-  return candidates.find((c) => existsSync(c)) ?? null;
-}
 
 function findApiRoute(cwd: string): string | null {
   const candidates = [
