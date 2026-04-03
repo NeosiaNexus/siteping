@@ -1,11 +1,12 @@
 [![npm version](https://img.shields.io/npm/v/@siteping/adapter-prisma)](https://www.npmjs.com/package/@siteping/adapter-prisma)
+[![Live Demo](https://img.shields.io/badge/demo-try%20it%20live-22c55e)](https://siteping.dev/demo)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 
 # @siteping/adapter-prisma
 
 Server-side Prisma adapter for [Siteping](https://github.com/NeosiaNexus/SitePing) — handles API request validation and database persistence.
 
-Part of the [@siteping](https://github.com/NeosiaNexus/SitePing) monorepo.
+Part of the [@siteping](https://github.com/NeosiaNexus/SitePing) monorepo — **[try the live demo](https://siteping.dev/demo)**.
 
 ## Install
 

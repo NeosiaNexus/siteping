@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SitePing — Client feedback, pinned to the pixel",
+  metadataBase: new URL("https://siteping.dev"),
+  title: {
+    default: "SitePing — Client feedback, pinned to the pixel",
+    template: "%s — SitePing",
+  },
   description:
     "Open-source feedback widget for freelancers and agencies. DOM-anchored annotations, self-hosted, zero SaaS fees.",
   openGraph: {
@@ -12,11 +16,16 @@ export const metadata: Metadata = {
     url: "https://siteping.dev",
     siteName: "SitePing",
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "SitePing — Client feedback, pinned to the pixel",
-    description: "Open-source feedback widget. Self-hosted, DOM-anchored, npm install and go.",
+    description:
+      "Open-source feedback widget. Self-hosted, DOM-anchored, npm install and go.",
+  },
+  other: {
+    "theme-color": "#030712",
   },
 };
 

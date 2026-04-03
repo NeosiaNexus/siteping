@@ -35,7 +35,7 @@
   ],
   "author": "neosianexus",
   "license": "MIT",
-  "homepage": "https://github.com/NeosiaNexus/SitePing/tree/main/packages/adapter-prisma",
+  "homepage": "https://siteping.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/NeosiaNexus/SitePing.git",
