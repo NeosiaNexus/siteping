@@ -1,8 +1,4 @@
-FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare bun@1.3.11 --activate
-
-# --- Dependencies ---
-FROM base AS deps
+FROM oven/bun:1.3.11-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY packages/core/package.json packages/core/
@@ -12,8 +8,8 @@ COPY packages/cli/package.json packages/cli/
 COPY apps/demo/package.json apps/demo/
 RUN bun install --frozen-lockfile
 
-# --- Builder ---
-FROM base AS builder
+FROM oven/bun:1.3.11-alpine AS builder
+RUN apk add --no-cache nodejs
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -22,7 +18,7 @@ COPY . .
 RUN bun run --filter='@siteping/widget' build && \
     bun run --filter='@siteping/adapter-prisma' build
 
-# Build demo app
+# Build demo app (Next.js needs node)
 RUN cd apps/demo && bun run build
 
 # --- Runner ---
