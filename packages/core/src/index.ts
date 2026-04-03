@@ -3,13 +3,21 @@ export type { FieldDef } from "./schema.js";
 export { SITEPING_MODELS } from "./schema.js";
 export type {
   AnchorData,
+  AnnotationCreateInput,
   AnnotationPayload,
+  AnnotationRecord,
   AnnotationResponse,
+  FeedbackCreateInput,
   FeedbackPayload,
+  FeedbackQuery,
+  FeedbackRecord,
   FeedbackResponse,
   FeedbackStatus,
   FeedbackType,
+  FeedbackUpdateInput,
   RectData,
   SitepingConfig,
   SitepingInstance,
+  SitepingStore,
 } from "./types.js";
+export { FEEDBACK_STATUSES, FEEDBACK_TYPES } from "./types.js";

@@ -1,3 +1,4 @@
+import { FEEDBACK_STATUSES, FEEDBACK_TYPES } from "@siteping/core";
 import * as zod from "zod";
 
 // Namespace import required: vitest resolves zod's CJS entry where named imports are unavailable.
@@ -34,7 +35,7 @@ const annotationSchema = z.object({
 
 export const feedbackCreateSchema = z.object({
   projectName: z.string().min(1),
-  type: z.enum(["question", "changement", "bug", "autre"]),
+  type: z.enum(FEEDBACK_TYPES),
   message: z.string().min(1).max(5000),
   url: z.string().url(),
   viewport: z.string().min(1),
@@ -47,7 +48,7 @@ export const feedbackCreateSchema = z.object({
 
 export const feedbackPatchSchema = z.object({
   id: z.string().min(1),
-  status: z.enum(["open", "resolved"]),
+  status: z.enum(FEEDBACK_STATUSES),
 });
 
 export const feedbackDeleteSchema = z.union([
