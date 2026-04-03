@@ -1,4 +1,9 @@
-import { feedbackCreateSchema, feedbackDeleteSchema, feedbackPatchSchema, formatValidationErrors } from "./validation.js";
+import {
+  feedbackCreateSchema,
+  feedbackDeleteSchema,
+  feedbackPatchSchema,
+  formatValidationErrors,
+} from "./validation.js";
 
 export { SITEPING_MODELS } from "./schema.js";
 export type { FeedbackCreateInput, FeedbackDeleteInput, FeedbackPatchInput } from "./validation.js";

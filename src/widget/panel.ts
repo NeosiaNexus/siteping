@@ -423,15 +423,11 @@ export class Panel {
           return;
         }
         if (ke.key === "Tab") {
-          const focused = dialog.contains((backdrop.getRootNode() as ShadowRoot).activeElement ?? document.activeElement);
-          if (!focused || (backdrop.getRootNode() as ShadowRoot).activeElement === confirmBtn) {
-            ke.preventDefault();
-            cancelBtn.focus();
-          } else if ((backdrop.getRootNode() as ShadowRoot).activeElement === cancelBtn && !ke.shiftKey) {
-            ke.preventDefault();
+          ke.preventDefault();
+          const active = (backdrop.getRootNode() as ShadowRoot).activeElement;
+          if (active === cancelBtn) {
             confirmBtn.focus();
-          } else if ((backdrop.getRootNode() as ShadowRoot).activeElement === confirmBtn && ke.shiftKey) {
-            ke.preventDefault();
+          } else {
             cancelBtn.focus();
           }
         }
