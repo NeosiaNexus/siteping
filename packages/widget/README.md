@@ -40,6 +40,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
 You also need a server-side adapter — see [`@siteping/adapter-prisma`](https://www.npmjs.com/package/@siteping/adapter-prisma).
 
+### Client-side mode (no server)
+
+Use a `store` instead of an `endpoint` to bypass HTTP entirely:
+
+```ts
+import { initSiteping } from '@siteping/widget'
+import { LocalStorageStore } from '@siteping/adapter-localstorage'
+
+initSiteping({
+  store: new LocalStorageStore(),
+  projectName: 'my-demo',
+})
+```
+
+Feedback persists in `localStorage` — no server, no database. Perfect for demos and prototyping. See [`@siteping/adapter-localstorage`](https://www.npmjs.com/package/@siteping/adapter-localstorage) and [`@siteping/adapter-memory`](https://www.npmjs.com/package/@siteping/adapter-memory).
+
 > **Framework-agnostic** — Works with any frontend framework (React, Vue, Svelte, Astro) or plain HTML. No framework dependency required.
 
 > **~23KB gzipped** — zero framework dependencies.
@@ -50,7 +66,8 @@ All configuration options for `initSiteping()`:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `endpoint` | `string` | — | **Required.** Your API route (e.g. `/api/siteping`) |
+| `endpoint` | `string` | — | Your API route (e.g. `/api/siteping`). Required unless `store` is provided |
+| `store` | `SitepingStore` | — | Direct store for client-side mode. When set, bypasses HTTP |
 | `projectName` | `string` | — | **Required.** Scopes feedbacks to this project |
 | `position` | `'bottom-right' \| 'bottom-left'` | `'bottom-right'` | Widget FAB position |
 | `accentColor` | `string` | `'#0066ff'` | Widget accent color — hex color (`#RGB`, `#RRGGBB`, `#RRGGBBAA`) |
@@ -166,6 +183,8 @@ style-src 'unsafe-inline';
 | Package | Description |
 |---------|-------------|
 | [`@siteping/adapter-prisma`](https://www.npmjs.com/package/@siteping/adapter-prisma) | Server-side Prisma adapter |
+| [`@siteping/adapter-memory`](https://www.npmjs.com/package/@siteping/adapter-memory) | In-memory adapter (testing, demos) |
+| [`@siteping/adapter-localstorage`](https://www.npmjs.com/package/@siteping/adapter-localstorage) | Client-side localStorage adapter |
 | [`@siteping/cli`](https://www.npmjs.com/package/@siteping/cli) | CLI for project setup |
 
 ## License

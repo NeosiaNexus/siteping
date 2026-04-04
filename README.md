@@ -135,8 +135,10 @@ That's it. Your clients can now draw rectangles on the site and leave feedback.
 
 ```ts
 initSiteping({
-  // Required
-  endpoint: '/api/siteping',      // Your API route
+  // Required (one of endpoint or store)
+  endpoint: '/api/siteping',      // Your API route (HTTP mode)
+  // OR
+  store: new LocalStorageStore(), // Direct store (client-side mode, no server)
   projectName: 'my-project',      // Scopes feedbacks to this project
 
   // Optional
@@ -286,21 +288,20 @@ Interactive setup that:
 ## Architecture
 
 ```
-Browser                          Server
-  |                                |
-  |  initSiteping({ endpoint })    |
-  |  ─── Widget (Shadow DOM) ───  |
-  |    FAB (radial menu)           |
-  |    Panel (history + filters)   |
-  |    Annotator (draw rects)      |
-  |    Markers + Tooltips          |
-  |                                |
-  |  ── POST /api/siteping ──────> |  createSitepingHandler({ prisma })
-  |                                |    Zod validation
-  |                                |    Prisma persistence
-  |  <── 201 { feedback } ──────  |
-  |                                |
-  |  Marker appears on page        |
+HTTP mode (endpoint)                Client-side mode (store)
+                                    
+Browser              Server         Browser
+  |                    |              |
+  |  initSiteping()    |              |  initSiteping({ store })
+  |  Widget ────────>  |              |  Widget ── StoreClient
+  |                    |              |               |
+  |  POST /api/siteping|              |       LocalStorageStore
+  |  ───────────────>  |              |       or MemoryStore
+  |                    |              |
+  |  Handler           |              |  No server needed
+  |    Zod validation  |              |
+  |    Prisma / Store  |              |
+  |  <── 201 ────────  |              |
 ```
 
 ### Key design decisions
@@ -317,9 +318,13 @@ Browser                          Server
 |---------|----------|-------------|
 | [`@siteping/widget`](https://www.npmjs.com/package/@siteping/widget) | Browser | Widget: `initSiteping()` |
 | [`@siteping/adapter-prisma`](https://www.npmjs.com/package/@siteping/adapter-prisma) | Node.js | Server: `createSitepingHandler()` |
+| [`@siteping/adapter-memory`](https://www.npmjs.com/package/@siteping/adapter-memory) | Any | In-memory store (testing, demos, serverless) |
+| [`@siteping/adapter-localstorage`](https://www.npmjs.com/package/@siteping/adapter-localstorage) | Browser | Client-side localStorage store (demos, prototyping) |
 | [`@siteping/cli`](https://www.npmjs.com/package/@siteping/cli) | CLI | Setup: `init`, `sync`, `status`, `doctor` |
 
 Each package is independently published and tree-shakeable. The widget bundle never includes Prisma or Zod. The adapter never includes DOM code.
+
+All adapters implement the `SitepingStore` interface — swap adapters without changing any other code.
 
 ---
 
@@ -369,7 +374,7 @@ bun run check
 
 | Suite | Tests | What it covers |
 |-------|-------|----------------|
-| Unit (Vitest) | 238 | Zod validation, API handlers, EventBus, API client retry, identity persistence, theme normalization, DOM anchoring, resolver, fuzzy matching, fingerprinting, XPath, text context, i18n |
+| Unit (Vitest) | 780+ | Zod validation, API handlers, store conformance, adapter tests, EventBus, API client retry, identity persistence, theme normalization, DOM anchoring, resolver, fuzzy matching, fingerprinting, XPath, text context, i18n |
 | E2E (Playwright) | 17 | Full browser: widget injection, FAB, panel, annotation draw, popup submit, marker creation, API persistence, cleanup |
 
 ---
@@ -434,6 +439,9 @@ This migration is safe for all supported databases (PostgreSQL, MySQL, SQLite): 
 - [ ] Webhook notifications (Discord, Slack)
 - [ ] Screenshot fallback when re-anchoring fails
 - [x] Multi-language support (i18n)
+- [x] Client-side store mode (no server needed)
+- [x] In-memory + localStorage adapters
+- [x] Adapter conformance test suite
 - [ ] Nuxt / Astro / SvelteKit support
 
 ---

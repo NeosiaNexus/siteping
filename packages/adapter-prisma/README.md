@@ -149,6 +149,8 @@ The widget collects and stores the following data per feedback submission:
 | Package | Description |
 |---------|-------------|
 | [`@siteping/widget`](https://www.npmjs.com/package/@siteping/widget) | Browser feedback widget |
+| [`@siteping/adapter-memory`](https://www.npmjs.com/package/@siteping/adapter-memory) | In-memory adapter (testing, demos) |
+| [`@siteping/adapter-localstorage`](https://www.npmjs.com/package/@siteping/adapter-localstorage) | Client-side localStorage adapter |
 | [`@siteping/cli`](https://www.npmjs.com/package/@siteping/cli) | CLI for project setup |
 
 ## License

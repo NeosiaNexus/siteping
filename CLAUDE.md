@@ -11,10 +11,12 @@
 - `bun run lint:fix` — biome auto-fix
 
 ## Architecture
-- **Monorepo** with bun workspaces — 4 packages in `packages/`:
-  - `@siteping/core` — shared types + schema definitions (internal, not published)
-  - `@siteping/widget` — browser feedback widget (Shadow DOM, closed mode)
+- **Monorepo** with bun workspaces — 6 packages in `packages/`:
+  - `@siteping/core` — shared types, schema, store errors + helpers (internal, not published)
+  - `@siteping/widget` — browser feedback widget (Shadow DOM, closed mode). Accepts `store` option for client-side mode (no server needed)
   - `@siteping/adapter-prisma` — server-side Prisma request handlers
+  - `@siteping/adapter-memory` — in-memory adapter (testing, demos, serverless)
+  - `@siteping/adapter-localstorage` — client-side localStorage adapter (demos, prototyping)
   - `@siteping/cli` — CLI tool for project setup (`siteping init/sync/status/doctor`)
 - Widget uses Shadow DOM (mode: closed), overlay lives outside Shadow DOM
 - DOM anchoring: @medv/finder CSS selector + XPath fallback + text snippet fallback

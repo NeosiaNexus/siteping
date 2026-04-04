@@ -12,6 +12,9 @@ This makes `@siteping/core` the **single source of truth** for:
 
 - All shared TypeScript types
 - The Prisma model definitions used by the CLI to generate schemas
+- Store error classes and type guards
+- Shared adapter helpers
+- Conformance test suite for adapter authors
 
 ## Main Exports
 
@@ -30,6 +33,23 @@ This makes `@siteping/core` the **single source of truth** for:
 | `AnchorData` | Multi-selector anchoring data (CSS selector, XPath, text snippet, fingerprint) |
 | `RectData` | Percentage-relative rectangle within the anchor element |
 | `FieldDef` | Schema field definition used by `SITEPING_MODELS` |
+
+### Adapter Pattern
+
+| Export | Description |
+|--------|-------------|
+| `SitepingStore` | Abstract store interface — 6 methods that every adapter implements |
+| `StoreNotFoundError` | Error class for missing records (update/delete) |
+| `StoreDuplicateError` | Error class for duplicate `clientId` |
+| `isStoreNotFound(err)` | Type guard — detects `StoreNotFoundError` and Prisma P2025 |
+| `isStoreDuplicate(err)` | Type guard — detects `StoreDuplicateError` and Prisma P2002 |
+| `flattenAnnotation(payload)` | Convert nested `AnnotationPayload` to flat `AnnotationCreateInput` |
+
+### Testing (`@siteping/core/testing`)
+
+| Export | Description |
+|--------|-------------|
+| `testSitepingStore(factory)` | Conformance test suite — runs 22 tests against any `SitepingStore` implementation |
 
 ### Schema
 

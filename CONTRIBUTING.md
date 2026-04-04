@@ -37,9 +37,11 @@ Monorepo with bun workspaces + Turborepo. All packages live in `packages/`:
 
 | Package | npm | Target | Description |
 |---------|-----|--------|-------------|
-| `@siteping/core` | private | — | Shared types + schema definitions (Internal Package, raw TS) |
-| `@siteping/widget` | published | Browser | Feedback widget (Shadow DOM, closed) |
+| `@siteping/core` | private | — | Shared types, schema, store errors, helpers, conformance tests |
+| `@siteping/widget` | published | Browser | Feedback widget (Shadow DOM, closed). Accepts `store` for client-side mode |
 | `@siteping/adapter-prisma` | published | Node | Prisma database adapter |
+| `@siteping/adapter-memory` | published | Any | In-memory adapter (testing, demos, serverless) |
+| `@siteping/adapter-localstorage` | published | Browser | localStorage adapter (demos, prototyping) |
 | `@siteping/cli` | published | Node | CLI tool (`siteping init/sync/status/doctor`) |
 
 - **Core** is an Internal Package — it exports raw TypeScript (no build step). Consumers bundle it via `noExternal: ["@siteping/core"]` in their tsup config.
@@ -177,6 +179,38 @@ bun run lint             # lint
 ```
 
 No changes needed in `turbo.json` or root `package.json` — Turborepo discovers new packages via the `workspaces` glob.
+
+## Creating a New Adapter
+
+Adapters implement the `SitepingStore` interface from `@siteping/core`. To create a new one (e.g. `adapter-drizzle`):
+
+1. Copy `packages/adapter-memory/` as a starting point (simplest adapter)
+2. Implement the 6 methods of `SitepingStore`:
+   - `createFeedback` — idempotent on `clientId` (return existing or throw `StoreDuplicateError`)
+   - `getFeedbacks` — paginated query with filters (type, status, search)
+   - `findByClientId` — return `null` when not found (no error)
+   - `updateFeedback` — throw `StoreNotFoundError` when id doesn't exist
+   - `deleteFeedback` — throw `StoreNotFoundError` when id doesn't exist
+   - `deleteAllFeedbacks` — no-op when none exist (no error)
+3. Use the shared conformance test suite to verify your implementation:
+
+```ts
+// __tests__/my-store.test.ts
+import { testSitepingStore } from '@siteping/core/testing'
+import { MyStore } from '../src/index.js'
+
+// Runs 22 conformance tests covering the full SitepingStore contract
+testSitepingStore(() => new MyStore(testConfig))
+
+// Add adapter-specific tests below (connection handling, serialization, etc.)
+```
+
+4. Re-export error types from your package for consumer convenience:
+```ts
+export { StoreNotFoundError, StoreDuplicateError } from '@siteping/core'
+```
+
+5. Use `flattenAnnotation()` from `@siteping/core` if your adapter handles HTTP payloads.
 
 ## Code Style
 
