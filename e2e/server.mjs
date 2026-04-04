@@ -145,16 +145,22 @@ const server = createServer((req, res) => {
     return;
   }
 
-  // Serve HTML
+  // Serve HTML — accept ?project=xxx for per-browser isolation
   if (url.pathname === "/" || url.pathname === "/index.html") {
+    const project = url.searchParams.get("project") || "e2e-test";
     res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(HTML);
+    res.end(HTML.replace("projectName: 'e2e-test'", `projectName: '${project}'`));
     return;
   }
 
-  // Reset store
+  // Reset store — scoped by ?projectName=xxx when provided
   if (url.pathname === "/api/reset") {
-    resetStore();
+    const projectName = url.searchParams.get("projectName");
+    if (projectName) {
+      feedbacks = feedbacks.filter(f => f.projectName !== projectName);
+    } else {
+      resetStore();
+    }
     res.writeHead(200);
     res.end("ok");
     return;
