@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.3](https://github.com/NeosiaNexus/SitePing/compare/cli-v0.4.2...cli-v0.4.3) (2026-04-04)
+
+
+### Bug Fixes
+
+* **cli:** translate to English, exit codes, timeout, nativeType support ([2773cae](https://github.com/NeosiaNexus/SitePing/commit/2773cae20de4e6d6a01635cd100003c783b16765))
+* comprehensive audit — 44 fixes across all packages ([60652ad](https://github.com/NeosiaNexus/SitePing/commit/60652ad03eb070fe18e2a4e943ea013f76070896))
+
+
+### Tests
+
+* add 184 tests across all packages + E2E for new features ([b7f869c](https://github.com/NeosiaNexus/SitePing/commit/b7f869c119c0a76f089d4e889d5b48be8b3e06c1))
+* raise coverage to 93%+ with 110 new tests across all packages ([cb39737](https://github.com/NeosiaNexus/SitePing/commit/cb3973774a89dec2eafb6aeb6087d492647553c1))
+
+
+### Documentation
+
+* sync all documentation and CI with adapter-memory/localstorage packages ([1be3661](https://github.com/NeosiaNexus/SitePing/commit/1be36619c7c0b80d23cb4533fb2ca96beafa7bcf))
+
 ## [0.4.0](https://github.com/NeosiaNexus/SitePing/compare/cli-v0.3.0...cli-v0.4.0) (2026-04-03)
 
 ### Features

@@ -1,8 +1,8 @@
 {
-  "packages/core": "0.4.0",
-  "packages/widget": "0.9.2",
-  "packages/adapter-prisma": "0.4.2",
-  "packages/adapter-memory": "0.4.2",
-  "packages/adapter-localstorage": "0.4.2",
-  "packages/cli": "0.4.2"
+  "packages/core": "0.5.0",
+  "packages/widget": "0.9.3",
+  "packages/adapter-prisma": "0.4.3",
+  "packages/adapter-memory": "0.4.3",
+  "packages/adapter-localstorage": "0.4.3",
+  "packages/cli": "0.4.3"
 }

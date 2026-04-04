@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.9.3](https://github.com/NeosiaNexus/SitePing/compare/widget-v0.9.2...widget-v0.9.3) (2026-04-04)
+
+
+### Features
+
+* add adapter-memory, adapter-localstorage, and widget store mode ([efa8b64](https://github.com/NeosiaNexus/SitePing/commit/efa8b64197d1a612146b0c988f1b708cd594b373))
+
+
+### Bug Fixes
+
+* comprehensive audit — 44 fixes across all packages ([60652ad](https://github.com/NeosiaNexus/SitePing/commit/60652ad03eb070fe18e2a4e943ea013f76070896))
+* **widget:** performance, security, DX, and dark theme overhaul ([b0422fe](https://github.com/NeosiaNexus/SitePing/commit/b0422fe27e2f76780956848fa8c1898710bcfe30))
+* **widget:** preserve runtime NODE_ENV check for Shadow DOM mode in bundle ([4cf482b](https://github.com/NeosiaNexus/SitePing/commit/4cf482ba5c56f89dade7875b86eead4c124e11d7))
+
+
+### Tests
+
+* add 184 tests across all packages + E2E for new features ([b7f869c](https://github.com/NeosiaNexus/SitePing/commit/b7f869c119c0a76f089d4e889d5b48be8b3e06c1))
+* raise coverage to 93%+ with 110 new tests across all packages ([cb39737](https://github.com/NeosiaNexus/SitePing/commit/cb3973774a89dec2eafb6aeb6087d492647553c1))
+
+
+### Documentation
+
+* update all documentation for adapter pattern and new packages ([bcdbd46](https://github.com/NeosiaNexus/SitePing/commit/bcdbd46cfe7f504f659335176e9454b66f3a4547))
+
 ## [0.9.0](https://github.com/NeosiaNexus/SitePing/compare/widget-v0.8.1...widget-v0.9.0) (2026-04-03)
 
 ### Features
