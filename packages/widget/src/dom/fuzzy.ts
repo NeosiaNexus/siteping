@@ -29,14 +29,16 @@ export function editDistance(a: string, b: string): number {
   for (let j = 1; j <= bLen; j++) {
     curr[0] = j;
     for (let i = 1; i <= aLen; i++) {
-      curr[i] = a[i - 1] === b[j - 1] ? prev[i - 1] : 1 + Math.min(prev[i - 1], prev[i], curr[i - 1]);
+      // Indices are valid: i-1 in [0, aLen-1], j-1 in [0, bLen-1], loop bounds guarantee access
+      const prevDiag = prev[i - 1] ?? 0;
+      curr[i] = a[i - 1] === b[j - 1] ? prevDiag : 1 + Math.min(prevDiag, prev[i] ?? 0, curr[i - 1] ?? 0);
     }
     const tmp = prev;
     prev = curr;
     curr = tmp;
   }
 
-  return prev[aLen];
+  return prev[aLen] ?? 0; // aLen is within bounds — prev has aLen+1 entries
 }
 
 /**

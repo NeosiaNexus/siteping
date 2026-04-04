@@ -52,7 +52,10 @@ interface Cluster {
 
 /** Get the i-th marker element from a cluster. */
 function clusterMarker(cluster: Cluster, i: number): HTMLElement | undefined {
-  return cluster.entries[i].elements[cluster.elementIndices[i]];
+  const entry = cluster.entries[i];
+  const elIdx = cluster.elementIndices[i];
+  if (!entry || elIdx === undefined) return undefined;
+  return entry.elements[elIdx];
 }
 
 const HIGHLIGHT_FADE = 300;
@@ -73,9 +76,11 @@ export class MarkerManager {
   private highlightElements: HTMLElement[] = [];
   private pinnedFeedback: FeedbackResponse | null = null;
   private onDocumentClick: ((e: MouseEvent) => void) | null = null;
-  private repositionTimer: ReturnType<typeof setTimeout> | null = null;
+  private repositionTimer: number | null = null;
   private mutationObserver: MutationObserver | null = null;
+  private scrollHandler: (() => void) | null = null;
   private resizeHandler: (() => void) | null = null;
+  private anchorCache = new Map<string, WeakRef<Element>>();
   private clusters: Cluster[] = [];
   private onDocumentClickForClusters: ((e: MouseEvent) => void) | null = null;
 
@@ -102,9 +107,17 @@ export class MarkerManager {
     this.resizeHandler = () => this.scheduleReposition();
     window.addEventListener("resize", this.resizeHandler, { passive: true });
 
+    this.scrollHandler = () => this.scheduleReposition();
+    window.addEventListener("scroll", this.scrollHandler, { passive: true, capture: true });
+
     // Re-resolve after DOM changes (SPA, lazy-load).
     // Filter out widget-owned mutations and skip batches with only irrelevant changes.
+    // Fast-path: large batches (>20 mutations) skip per-record filtering.
     this.mutationObserver = new MutationObserver((mutations) => {
+      if (mutations.length > 20) {
+        this.scheduleReposition();
+        return;
+      }
       let hasRelevantMutation = false;
       for (const m of mutations) {
         if (this.container.contains(m.target) || this.tooltip.contains(m.target)) continue;
@@ -136,9 +149,9 @@ export class MarkerManager {
           this.repositionAll();
         },
         { timeout: REPOSITION_DEBOUNCE + 100 },
-      ) as unknown as ReturnType<typeof setTimeout>;
+      );
     } else {
-      this.repositionTimer = setTimeout(() => {
+      this.repositionTimer = +setTimeout(() => {
         this.repositionTimer = null;
         this.repositionAll();
       }, REPOSITION_DEBOUNCE);
@@ -152,7 +165,35 @@ export class MarkerManager {
         if (!markerEl) continue;
 
         const annotation = entry.feedback.annotations[i];
-        const resolved = resolveAnnotation(toAnchorData(annotation), toRectData(annotation));
+        if (!annotation) continue;
+        const cacheKey = `${entry.feedback.id}:${i}`;
+
+        // Try cached element first to avoid full resolution chain.
+        const cachedRef = this.anchorCache.get(cacheKey);
+        const cachedEl = cachedRef?.deref();
+        let resolved: ReturnType<typeof resolveAnnotation>;
+
+        if (cachedEl?.isConnected) {
+          const anchorRect = cachedEl.getBoundingClientRect();
+          const r = toRectData(annotation);
+          resolved = {
+            element: cachedEl,
+            rect: new DOMRect(
+              anchorRect.left + r.xPct * anchorRect.width,
+              anchorRect.top + r.yPct * anchorRect.height,
+              r.wPct * anchorRect.width,
+              r.hPct * anchorRect.height,
+            ),
+            confidence: 1,
+            strategy: "css",
+          };
+        } else {
+          resolved = resolveAnnotation(toAnchorData(annotation), toRectData(annotation));
+          if (resolved?.element) {
+            this.anchorCache.set(cacheKey, new WeakRef(resolved.element));
+          }
+        }
+
         if (!resolved) {
           markerEl.style.display = "none";
           continue;
@@ -229,21 +270,25 @@ export class MarkerManager {
 
     for (let i = 0; i < allItems.length; i++) {
       if (used.has(i)) continue;
+      const itemI = allItems[i];
+      if (!itemI) continue;
       const cluster: Cluster = {
-        entries: [allItems[i].entry],
-        elementIndices: [allItems[i].elIdx],
+        entries: [itemI.entry],
+        elementIndices: [itemI.elIdx],
         expanded: false,
       };
       used.add(i);
 
       for (let j = i + 1; j < allItems.length; j++) {
         if (used.has(j)) continue;
-        const a = allItems[i].entry;
-        const b = allItems[j].entry;
+        const a = itemI.entry;
+        const itemJ = allItems[j];
+        if (!itemJ) continue;
+        const b = itemJ.entry;
         const dist = Math.sqrt((a.baseLeft - b.baseLeft) ** 2 + (a.baseTop - b.baseTop) ** 2);
         if (dist < CLUSTER_DISTANCE) {
           cluster.entries.push(b);
-          cluster.elementIndices.push(allItems[j].elIdx);
+          cluster.elementIndices.push(itemJ.elIdx);
           used.add(j);
         }
       }
@@ -259,7 +304,9 @@ export class MarkerManager {
   }
 
   private applyStackPositions(cluster: Cluster): void {
-    const { baseTop, baseLeft } = cluster.entries[0];
+    const first = cluster.entries[0];
+    if (!first) return;
+    const { baseTop, baseLeft } = first;
     const isSolo = cluster.entries.length <= 1;
     for (let i = 0; i < cluster.entries.length; i++) {
       const m = clusterMarker(cluster, i);
@@ -271,7 +318,9 @@ export class MarkerManager {
   }
 
   private applyFanPositions(cluster: Cluster): void {
-    const { baseTop, baseLeft } = cluster.entries[0];
+    const first = cluster.entries[0];
+    if (!first) return;
+    const { baseTop, baseLeft } = first;
     const count = cluster.entries.length;
     const totalWidth = (count - 1) * FAN_SPACING;
     const startLeft = baseLeft - totalWidth / 2;
@@ -376,8 +425,6 @@ export class MarkerManager {
         width:26px;height:26px;
         border-radius:50%;
         background:${isResolved ? "rgba(241,245,249,0.9)" : "rgba(255,255,255,0.92)"};
-        backdrop-filter:blur(12px);
-        -webkit-backdrop-filter:blur(12px);
         border:2px solid ${isResolved ? "#cbd5e1" : typeColor};
         display:flex;align-items:center;justify-content:center;
         font-family:"Inter",system-ui,-apple-system,sans-serif;
@@ -528,17 +575,19 @@ export class MarkerManager {
     this.container.replaceChildren();
     this.entries = [];
     this.clusters = [];
+    this.anchorCache.clear();
   }
 
   destroy(): void {
     this.unpinHighlight();
     if (this.repositionTimer) {
       if ("cancelIdleCallback" in window) {
-        window.cancelIdleCallback(this.repositionTimer as unknown as number);
+        window.cancelIdleCallback(this.repositionTimer);
       }
       clearTimeout(this.repositionTimer);
     }
     if (this.resizeHandler) window.removeEventListener("resize", this.resizeHandler);
+    if (this.scrollHandler) window.removeEventListener("scroll", this.scrollHandler, { capture: true });
     if (this.onDocumentClickForClusters) document.removeEventListener("click", this.onDocumentClickForClusters);
     this.mutationObserver?.disconnect();
     this.container.remove();

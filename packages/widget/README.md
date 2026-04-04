@@ -42,7 +42,7 @@ You also need a server-side adapter — see [`@siteping/adapter-prisma`](https:/
 
 > **Framework-agnostic** — Works with any frontend framework (React, Vue, Svelte, Astro) or plain HTML. No framework dependency required.
 
-> **~23KB gzipped, zero framework dependencies.**
+> **~23KB gzipped** — zero framework dependencies.
 
 ## Configuration
 
@@ -53,11 +53,13 @@ All configuration options for `initSiteping()`:
 | `endpoint` | `string` | — | **Required.** Your API route (e.g. `/api/siteping`) |
 | `projectName` | `string` | — | **Required.** Scopes feedbacks to this project |
 | `position` | `'bottom-right' \| 'bottom-left'` | `'bottom-right'` | Widget FAB position |
-| `accentColor` | `string` | `'#0066ff'` | Widget accent color (any CSS color) |
+| `accentColor` | `string` | `'#0066ff'` | Widget accent color — hex color (`#RGB`, `#RRGGBB`, `#RRGGBBAA`) |
 | `theme` | `'light' \| 'dark' \| 'auto'` | `'light'` | Widget color theme |
-| `locale` | `'fr' \| 'en'` | `'fr'` | Widget UI language |
+| `locale` | `'fr' \| 'en'` | `'en'` | Widget UI language |
 | `forceShow` | `boolean` | `false` | Show the widget in production (hidden by default) |
 | `debug` | `boolean` | `false` | Enable debug logging to console |
+
+> **Custom translations** — Use `registerLocale(code, translations)` to add your own locale at runtime.
 
 ### Event callbacks
 
@@ -78,7 +80,7 @@ initSiteping({
   position: 'bottom-right',
   accentColor: '#0066ff',
   theme: 'light',
-  locale: 'fr',
+  locale: 'en',
   forceShow: false,
   debug: false,
   onOpen: () => {},
@@ -141,6 +143,14 @@ widget.off('feedback:sent', handler) // via off()
 | `feedback:deleted` | `string` (feedback id) | Fired after a feedback is deleted |
 | `panel:open` | — | Fired when the feedback panel opens |
 | `panel:close` | — | Fired when the feedback panel closes |
+
+## CSP Requirements
+
+The widget uses Shadow DOM (closed mode) for encapsulation, but overlay components (annotation layer, screenshot flash) live outside the shadow root. If your site enforces a strict Content Security Policy, you need to allow inline styles:
+
+```
+style-src 'unsafe-inline';
+```
 
 ## Features
 

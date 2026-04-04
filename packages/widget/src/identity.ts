@@ -9,8 +9,18 @@ export function getIdentity(): Identity | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Identity;
-    if (parsed.name && parsed.email) return parsed;
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "name" in parsed &&
+      typeof (parsed as Record<string, unknown>).name === "string" &&
+      "email" in parsed &&
+      typeof (parsed as Record<string, unknown>).email === "string"
+    ) {
+      const identity = parsed as Identity;
+      if (identity.name && identity.email) return identity;
+    }
     return null;
   } catch {
     return null;

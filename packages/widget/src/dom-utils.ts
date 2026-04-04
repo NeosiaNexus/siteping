@@ -17,6 +17,16 @@ export function parseSvg(svgString: string): SVGSVGElement {
   if (!svg || svg.nodeName.toLowerCase() !== "svg") {
     throw new Error("[siteping] Invalid SVG string");
   }
+  // Safety: strip any event handlers in case of accidental misuse
+  for (const attr of [...svg.attributes]) {
+    if (attr.name.startsWith("on")) svg.removeAttribute(attr.name);
+  }
+  // Also strip from all descendants
+  for (const el of svg.querySelectorAll("*")) {
+    for (const attr of [...el.attributes]) {
+      if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+    }
+  }
   return svg as SVGSVGElement;
 }
 

@@ -11,6 +11,9 @@ import { buildStyles } from "./styles/base.js";
 import { buildThemeColors } from "./styles/theme.js";
 import { Tooltip } from "./tooltip.js";
 
+/** Singleton guard — prevents duplicate widgets from overlapping */
+let instance: SitepingInstance | null = null;
+
 /** Build a no-op SitepingInstance for when the widget is skipped */
 function skippedInstance(): SitepingInstance {
   const noop = () => {};
@@ -39,6 +42,12 @@ export function launch(config: SitepingConfig): SitepingInstance {
     ? (...args: unknown[]) => console.debug("[siteping]", ...args)
     : () => {};
 
+  // Guard: prevent duplicate initSiteping() calls
+  if (instance) {
+    log("initSiteping() called more than once — returning existing instance");
+    return instance;
+  }
+
   // Guard: only show in development (forceShow bypasses)
   if (!config.forceShow) {
     try {
@@ -63,7 +72,17 @@ export function launch(config: SitepingConfig): SitepingInstance {
     return skippedInstance();
   }
 
-  const locale = config.locale ?? "fr";
+  // Guard: validate required config fields
+  if (!config.endpoint || typeof config.endpoint !== "string") {
+    console.error("[siteping] Missing or invalid 'endpoint' in config. Expected a string like '/api/siteping'.");
+    return skippedInstance();
+  }
+  if (!config.projectName || typeof config.projectName !== "string") {
+    console.error("[siteping] Missing or invalid 'projectName' in config. Expected a non-empty string.");
+    return skippedInstance();
+  }
+
+  const locale = config.locale ?? "en";
   const t = createT(locale);
 
   log("Initializing widget", { projectName: config.projectName, theme: config.theme ?? "light", locale });
@@ -71,7 +90,7 @@ export function launch(config: SitepingConfig): SitepingInstance {
   const colors = buildThemeColors(config.accentColor, config.theme);
   const bus = new EventBus<WidgetEvents>();
   const publicBus = new EventBus<PublicWidgetEvents>();
-  const apiClient = new ApiClient(config.endpoint);
+  const apiClient = new ApiClient(config.endpoint, config.projectName);
 
   // Wire config callbacks to event bus
   if (config.onOpen) bus.on("open", config.onOpen);
@@ -162,17 +181,35 @@ export function launch(config: SitepingConfig): SitepingInstance {
         saveIdentity(identity);
       }
 
+      // Sanitize URL — strip sensitive query params before sending
+      const rawUrl = new URL(window.location.href);
+      for (const key of [...rawUrl.searchParams.keys()]) {
+        if (/token|key|secret|auth|session|password|code/i.test(key)) {
+          rawUrl.searchParams.delete(key);
+        }
+      }
+      const sanitizedUrl = rawUrl.toString();
+
+      // crypto.randomUUID() throws in non-secure contexts (plain HTTP)
+      const clientId = (() => {
+        try {
+          return crypto.randomUUID();
+        } catch {
+          return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        }
+      })();
+
       const payload: FeedbackPayload = {
         projectName: config.projectName,
         type,
         message,
-        url: window.location.href,
+        url: sanitizedUrl,
         viewport: `${window.innerWidth}x${window.innerHeight}`,
         userAgent: navigator.userAgent,
         authorName: identity.name,
         authorEmail: identity.email,
         annotations: [annotation],
-        clientId: crypto.randomUUID(),
+        clientId,
       };
 
       try {
@@ -196,8 +233,8 @@ export function launch(config: SitepingConfig): SitepingInstance {
     .then(({ feedbacks }) => {
       markers.render(feedbacks);
     })
-    .catch(() => {
-      // Silently fail — markers will load when panel opens
+    .catch((err) => {
+      log("Failed to load initial markers:", err);
     });
 
   // Flush retry queue on load
@@ -205,7 +242,7 @@ export function launch(config: SitepingConfig): SitepingInstance {
     .then(() => log("Retry queue flushed"))
     .catch(() => {});
 
-  return {
+  instance = {
     destroy: () => {
       log("Destroying widget");
       unsubAnnotation();
@@ -218,6 +255,7 @@ export function launch(config: SitepingConfig): SitepingInstance {
       publicBus.removeAll();
       liveRegion.remove();
       host.remove();
+      instance = null;
     },
     open: () => {
       panel.open();
@@ -229,12 +267,18 @@ export function launch(config: SitepingConfig): SitepingInstance {
       panel.refresh();
     },
     on: <K extends keyof SitepingPublicEvents>(event: K, listener: (...args: SitepingPublicEvents[K]) => void) => {
-      return publicBus.on(event as string as keyof PublicWidgetEvents, listener as never);
+      // Safe cast: SitepingPublicEvents and PublicWidgetEvents have identical keys and value types
+      type TargetKey = K & keyof PublicWidgetEvents;
+      return publicBus.on(event as TargetKey, listener as unknown as (...args: PublicWidgetEvents[TargetKey]) => void);
     },
     off: <K extends keyof SitepingPublicEvents>(event: K, listener: (...args: SitepingPublicEvents[K]) => void) => {
-      publicBus.off(event as string as keyof PublicWidgetEvents, listener as never);
+      // Safe cast: SitepingPublicEvents and PublicWidgetEvents have identical keys and value types
+      type TargetKey = K & keyof PublicWidgetEvents;
+      publicBus.off(event as TargetKey, listener as unknown as (...args: PublicWidgetEvents[TargetKey]) => void);
     },
   };
+
+  return instance;
 }
 
 /**
@@ -250,7 +294,7 @@ function promptIdentity(shadowRoot: ShadowRoot, t: TFunction): Promise<Identity 
     const backdrop = document.createElement("div");
     backdrop.style.cssText = `
       position:fixed;inset:0;
-      background:rgba(15, 23, 42, 0.2);
+      background:var(--sp-identity-overlay);
       backdrop-filter:blur(8px);
       -webkit-backdrop-filter:blur(8px);
       display:flex;align-items:center;justify-content:center;
@@ -260,13 +304,14 @@ function promptIdentity(shadowRoot: ShadowRoot, t: TFunction): Promise<Identity 
 
     const modal = document.createElement("div");
     modal.style.cssText = `
-      width:340px;padding:28px;border-radius:20px;
-      background:rgba(255, 255, 255, 0.85);
-      backdrop-filter:blur(32px);
-      -webkit-backdrop-filter:blur(32px);
-      border:1px solid rgba(255, 255, 255, 0.35);
-      box-shadow:0 16px 48px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
-      font-family:"Inter",system-ui,-apple-system,sans-serif;
+      width:340px;padding:28px;border-radius:var(--sp-radius-xl);
+      background:var(--sp-identity-bg);
+      backdrop-filter:blur(var(--sp-blur-heavy));
+      -webkit-backdrop-filter:blur(var(--sp-blur-heavy));
+      border:1px solid var(--sp-glass-border);
+      box-shadow:0 16px 48px var(--sp-shadow), 0 8px 16px var(--sp-shadow);
+      font-family:var(--sp-font, "Inter",system-ui,-apple-system,sans-serif);
+      color:var(--sp-text);
       transform:translateY(12px) scale(0.97);
       transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       -webkit-font-smoothing:antialiased;
@@ -335,7 +380,7 @@ function promptIdentity(shadowRoot: ShadowRoot, t: TFunction): Promise<Identity 
       if (!name || !email) return;
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        emailInput.style.borderColor = "#ef4444";
+        emailInput.style.borderColor = "var(--sp-type-bug, #ef4444)";
         return;
       }
       closeModal({ name, email });
@@ -354,6 +399,7 @@ function promptIdentity(shadowRoot: ShadowRoot, t: TFunction): Promise<Identity 
         if (focusableEls.length === 0) return;
         const first = focusableEls[0];
         const last = focusableEls[focusableEls.length - 1];
+        if (!first || !last) return;
         const active = shadowRoot.activeElement as HTMLElement | null;
         if (ke.shiftKey) {
           if (active === first || !modal.contains(active)) {

@@ -48,10 +48,6 @@ export class Tooltip {
       `,
     });
 
-    // Respect prefers-reduced-motion
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      this.root.style.transition = "none";
-    }
     this.root.setAttribute("role", "tooltip");
     this.root.id = this.tooltipId;
 
@@ -83,6 +79,12 @@ export class Tooltip {
       this.currentFeedbackId = feedback.id;
       this.render(feedback);
       this.position(anchorRect);
+
+      // Check prefers-reduced-motion live (not cached at construction time)
+      const reduceMotion =
+        typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      this.root.style.transition = reduceMotion ? "none" : "";
+
       this.root.style.visibility = "visible";
       this.root.style.opacity = "1";
       this.root.style.transform = "translateY(0) scale(1)";

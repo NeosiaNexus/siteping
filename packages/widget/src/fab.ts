@@ -60,6 +60,7 @@ export class Fab {
 
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items[i];
+      if (!item) continue;
       const btn = document.createElement("button");
       btn.className = "sp-radial-item";
       btn.style.setProperty("--sp-i", String(i));
@@ -119,23 +120,23 @@ export class Fab {
         case "ArrowUp": {
           e.preventDefault();
           const nextIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
-          items[nextIndex].focus();
+          items[nextIndex]?.focus();
           break;
         }
         case "ArrowDown": {
           e.preventDefault();
           const nextIndex = currentIndex >= items.length - 1 ? 0 : currentIndex + 1;
-          items[nextIndex].focus();
+          items[nextIndex]?.focus();
           break;
         }
         case "Home": {
           e.preventDefault();
-          items[0].focus();
+          items[0]?.focus();
           break;
         }
         case "End": {
           e.preventDefault();
-          items[items.length - 1].focus();
+          items[items.length - 1]?.focus();
           break;
         }
       }

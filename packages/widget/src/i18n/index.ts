@@ -9,14 +9,22 @@ import { fr } from "./fr.js";
 
 const LOCALES: Record<string, Translations> = { fr, en };
 
+/** Register a custom locale at runtime. */
+export function registerLocale(code: string, translations: Translations): void {
+  LOCALES[code] = translations;
+}
+
 /**
  * Create a translation function for the given locale.
  *
- * Locale resolution: exact match > language prefix > French fallback.
+ * Locale resolution: exact match > language prefix > English fallback.
  */
 export function createT(locale: string): TFunction {
-  const lang = locale.split("-")[0].toLowerCase();
-  const dict = LOCALES[lang] ?? LOCALES.fr;
+  const lang = (locale.split("-")[0] ?? locale).toLowerCase();
+  if (!LOCALES[lang]) {
+    console.warn(`[siteping] Unknown locale "${locale}", falling back to "en"`);
+  }
+  const dict = LOCALES[lang] ?? LOCALES.en ?? ({} as Translations);
   return (key) => dict[key] ?? key;
 }
 

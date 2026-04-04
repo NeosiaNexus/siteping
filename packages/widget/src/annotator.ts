@@ -31,6 +31,8 @@ export class Annotator {
   private popup: Popup;
   private savedOverflow = "";
   private preActiveFocusElement: Element | null = null;
+  private rafId: number | null = null;
+  private pendingMoveEvent: MouseEvent | Touch | null = null;
 
   constructor(
     private readonly colors: ThemeColors,
@@ -133,6 +135,11 @@ export class Annotator {
     this.overlay.addEventListener("mousemove", this.onMouseMove);
     this.overlay.addEventListener("mouseup", this.onMouseUp);
 
+    // Touch events (Surface Pro, iPad, etc.)
+    this.overlay.addEventListener("touchstart", this.onTouchStart, { passive: false });
+    this.overlay.addEventListener("touchmove", this.onTouchMove, { passive: false });
+    this.overlay.addEventListener("touchend", this.onTouchEnd);
+
     // Keyboard annotation: Enter selects the pre-activation focused element
     this.overlay.addEventListener("keydown", this.onOverlayKeyDown);
 
@@ -151,6 +158,13 @@ export class Annotator {
     this.isActive = false;
     this.isDrawing = false;
     this.preActiveFocusElement = null;
+
+    // Cancel any pending rAF to prevent stale callbacks
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    this.pendingMoveEvent = null;
 
     document.body.style.overflow = this.savedOverflow;
     document.removeEventListener("keydown", this.onKeyDown);
@@ -210,9 +224,19 @@ export class Annotator {
   };
 
   private onMouseDown = (e: MouseEvent): void => {
+    this.startDrawing(e.clientX, e.clientY);
+  };
+
+  private onTouchStart = (e: TouchEvent): void => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    if (touch) this.startDrawing(touch.clientX, touch.clientY);
+  };
+
+  private startDrawing(clientX: number, clientY: number): void {
     this.isDrawing = true;
-    this.startX = e.clientX;
-    this.startY = e.clientY;
+    this.startX = clientX;
+    this.startY = clientY;
 
     this.drawingRect?.remove();
     this.drawingRect = el("div", {
@@ -227,30 +251,57 @@ export class Annotator {
       `,
     });
     this.overlay?.appendChild(this.drawingRect);
-  };
+  }
 
   private onMouseMove = (e: MouseEvent): void => {
+    this.scheduleRectUpdate(e);
+  };
+
+  private onTouchMove = (e: TouchEvent): void => {
+    e.preventDefault();
+    if (e.touches[0]) this.scheduleRectUpdate(e.touches[0]);
+  };
+
+  private scheduleRectUpdate(source: MouseEvent | Touch): void {
     if (!this.isDrawing || !this.drawingRect) return;
 
-    const x = Math.min(e.clientX, this.startX);
-    const y = Math.min(e.clientY, this.startY);
-    const w = Math.abs(e.clientX - this.startX);
-    const h = Math.abs(e.clientY - this.startY);
+    this.pendingMoveEvent = source;
+    if (this.rafId !== null) return;
 
-    this.drawingRect.style.left = `${x}px`;
-    this.drawingRect.style.top = `${y}px`;
-    this.drawingRect.style.width = `${w}px`;
-    this.drawingRect.style.height = `${h}px`;
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+      const evt = this.pendingMoveEvent;
+      if (!evt || !this.drawingRect) return;
+
+      const x = Math.min(evt.clientX, this.startX);
+      const y = Math.min(evt.clientY, this.startY);
+      const w = Math.abs(evt.clientX - this.startX);
+      const h = Math.abs(evt.clientY - this.startY);
+
+      this.drawingRect.style.left = `${x}px`;
+      this.drawingRect.style.top = `${y}px`;
+      this.drawingRect.style.width = `${w}px`;
+      this.drawingRect.style.height = `${h}px`;
+    });
+  }
+
+  private onTouchEnd = async (e: TouchEvent): Promise<void> => {
+    const touch = e.changedTouches[0];
+    if (touch) await this.finishDrawing(touch.clientX, touch.clientY);
   };
 
   private onMouseUp = async (e: MouseEvent): Promise<void> => {
+    await this.finishDrawing(e.clientX, e.clientY);
+  };
+
+  private finishDrawing = async (clientX: number, clientY: number): Promise<void> => {
     if (!this.isDrawing || !this.drawingRect) return;
     this.isDrawing = false;
 
-    const x = Math.min(e.clientX, this.startX);
-    const y = Math.min(e.clientY, this.startY);
-    const w = Math.abs(e.clientX - this.startX);
-    const h = Math.abs(e.clientY - this.startY);
+    const x = Math.min(clientX, this.startX);
+    const y = Math.min(clientY, this.startY);
+    const w = Math.abs(clientX - this.startX);
+    const h = Math.abs(clientY - this.startY);
 
     // Ignore tiny rectangles (accidental clicks)
     if (w < 10 || h < 10) {

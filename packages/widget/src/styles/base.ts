@@ -28,6 +28,10 @@ export function buildStyles(colors: ThemeColors): string {
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       ${cssVariables(colors)}
+
+      /* Identity modal — theme-aware backdrop + panel */
+      --sp-identity-bg: ${colors.glassBgHeavy};
+      --sp-identity-overlay: ${colors.bg === "#ffffff" ? "rgba(15, 23, 42, 0.2)" : "rgba(0, 0, 0, 0.4)"};
     }
 
     *, *::before, *::after {
@@ -223,6 +227,7 @@ export function buildStyles(colors: ThemeColors): string {
       width: 400px;
       max-width: 100vw;
       height: 100vh;
+      height: 100dvh;
       background: var(--sp-glass-bg);
       backdrop-filter: blur(var(--sp-blur-heavy));
       -webkit-backdrop-filter: blur(var(--sp-blur-heavy));

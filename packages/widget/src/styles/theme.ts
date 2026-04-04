@@ -34,12 +34,27 @@ const HEX6_RE = /^#[0-9a-fA-F]{6}$/;
 const HEX3_RE = /^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/;
 const HEX8_RE = /^#[0-9a-fA-F]{8}$/;
 
-/** Normalize any accent color to a 6-digit hex, or fall back to default */
-function normalizeHex(color: string): string {
-  if (HEX6_RE.test(color)) return color;
-  const short = HEX3_RE.test(color) ? color.match(HEX3_RE) : null;
+/**
+ * Normalize an accent color to a 6-digit hex string.
+ *
+ * **Only hex formats are accepted:**
+ * - `#RGB`      (3-digit shorthand, expanded to 6-digit)
+ * - `#RRGGBB`   (standard 6-digit)
+ * - `#RRGGBBAA` (8-digit with alpha, alpha is stripped)
+ *
+ * Any other CSS color format (named colors like `"red"`, `hsl()`, `rgb()`,
+ * `oklch()`, etc.) is **not** supported and will fall back to the default
+ * accent color with a console warning.
+ */
+function normalizeHex(raw: string): string {
+  if (HEX6_RE.test(raw)) return raw;
+  const short = HEX3_RE.test(raw) ? raw.match(HEX3_RE) : null;
   if (short) return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`;
-  if (HEX8_RE.test(color)) return color.slice(0, 7);
+  if (HEX8_RE.test(raw)) return raw.slice(0, 7);
+
+  console.warn(
+    `[siteping] Invalid accentColor "${raw}" — only hex colors (#RGB, #RRGGBB, #RRGGBBAA) are supported. Using default.`,
+  );
   return DEFAULT_ACCENT;
 }
 

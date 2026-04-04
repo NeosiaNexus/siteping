@@ -56,11 +56,6 @@ export class Popup {
       `,
     });
 
-    // Respect prefers-reduced-motion
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      this.root.style.transition = "none";
-    }
-
     this.root.setAttribute("role", "dialog");
     this.root.setAttribute("aria-modal", "true");
     this.root.setAttribute("aria-label", this.t("popup.ariaLabel"));
@@ -129,6 +124,7 @@ export class Popup {
       box-sizing:border-box;
     `;
     this.textarea.placeholder = this.t("popup.placeholder");
+    this.textarea.maxLength = 5000;
     this.textarea.setAttribute("aria-label", this.t("popup.textareaAria"));
 
     // Keyboard shortcut hint
@@ -140,8 +136,12 @@ export class Popup {
         letter-spacing:0.01em;
       `,
     });
+    // navigator.userAgentData is preferred; navigator.platform is deprecated
+    // but still needed as fallback. If both are unavailable, fall back to user agent string parsing.
     const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
-    const isMac = uaData ? uaData.platform === "macOS" : (navigator.platform?.includes("Mac") ?? false);
+    const isMac = uaData
+      ? uaData.platform === "macOS"
+      : (navigator.platform?.includes("Mac") ?? /Macintosh|Mac OS X/i.test(navigator.userAgent));
     setText(hint, isMac ? this.t("popup.submitHintMac") : this.t("popup.submitHintOther"));
 
     this.textarea.addEventListener("focus", () => {
@@ -258,6 +258,7 @@ export class Popup {
           if (focusableEls.length === 0) return;
           const first = focusableEls[0];
           const last = focusableEls[focusableEls.length - 1];
+          if (!first || !last) return;
           if (e.shiftKey) {
             if (document.activeElement === first || !this.root.contains(document.activeElement)) {
               e.preventDefault();
@@ -272,6 +273,11 @@ export class Popup {
         }
       };
       this.root.addEventListener("keydown", this.onKeydownTrap);
+
+      // Check prefers-reduced-motion live (not cached at construction time)
+      const reduceMotion =
+        typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      this.root.style.transition = reduceMotion ? "none" : "";
 
       // Trigger animation
       requestAnimationFrame(() => {

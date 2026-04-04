@@ -123,6 +123,90 @@ export class Panel {
     this.root.appendChild(this.listContainer);
     shadowRoot.appendChild(this.root);
 
+    // --- Event delegation on listContainer ---
+
+    this.onListClick = (e: Event) => {
+      const target = e.target as Element;
+
+      // Action buttons (expand, resolve, delete)
+      const actionEl = target.closest<HTMLElement>("[data-action]");
+      if (actionEl) {
+        e.stopPropagation();
+        const card = actionEl.closest<HTMLElement>(".sp-card");
+        if (!card) return;
+        const feedbackId = card.dataset.feedbackId;
+        const feedback = this.feedbacks.find((f) => f.id === feedbackId);
+        if (!feedback) return;
+
+        const action = actionEl.dataset.action;
+        if (action === "expand") {
+          const message = card.querySelector<HTMLElement>(".sp-card-message");
+          if (!message) return;
+          const isExpanded = message.classList.toggle("sp-card-message--expanded");
+          setText(actionEl, isExpanded ? this.t("panel.showLess") : this.t("panel.showMore"));
+          actionEl.setAttribute("aria-expanded", String(isExpanded));
+        } else if (action === "resolve") {
+          const btn = actionEl as HTMLButtonElement;
+          this.toggleResolve(feedback, btn).catch(() => {});
+        } else if (action === "delete") {
+          const btn = actionEl as HTMLButtonElement;
+          this.deleteFeedback(feedback, btn).catch(() => {});
+        }
+        return;
+      }
+
+      // Card click (scroll to annotation)
+      const card = target.closest<HTMLElement>(".sp-card");
+      if (card) {
+        const feedbackId = card.dataset.feedbackId;
+        const feedback = this.feedbacks.find((f) => f.id === feedbackId);
+        if (feedback && feedback.annotations.length > 0) {
+          const ann = feedback.annotations[0];
+          if (!ann) return;
+          window.scrollTo({ left: ann.scrollX, top: ann.scrollY, behavior: "smooth" });
+          this.markers.pinHighlight(feedback);
+        }
+      }
+    };
+    this.listContainer.addEventListener("click", this.onListClick);
+
+    this.onListKeydown = (e: Event) => {
+      const ke = e as KeyboardEvent;
+      if (ke.key !== "Enter" && ke.key !== " ") return;
+      const target = ke.target as Element;
+      const card = target.closest<HTMLElement>(".sp-card");
+      // Only activate if the card itself is focused, not a button inside it
+      if (!card || target !== card) return;
+      ke.preventDefault();
+      const feedbackId = card.dataset.feedbackId;
+      const feedback = this.feedbacks.find((f) => f.id === feedbackId);
+      if (feedback && feedback.annotations.length > 0) {
+        const ann = feedback.annotations[0];
+        if (!ann) return;
+        window.scrollTo({ left: ann.scrollX, top: ann.scrollY, behavior: "smooth" });
+        this.markers.pinHighlight(feedback);
+      }
+    };
+    this.listContainer.addEventListener("keydown", this.onListKeydown);
+
+    // mouseover/mouseout bubble (unlike mouseenter/mouseleave), enabling delegation
+    this.onListMouseover = (e: Event) => {
+      const target = (e as MouseEvent).target as Element;
+      const card = target.closest<HTMLElement>(".sp-card");
+      if (!card) return;
+      const feedbackId = card.dataset.feedbackId;
+      if (feedbackId) this.markers.highlight(feedbackId);
+    };
+    this.listContainer.addEventListener("mouseover", this.onListMouseover);
+
+    this.onListMouseout = (e: Event) => {
+      const target = (e as MouseEvent).relatedTarget as Element | null;
+      // Only clear highlight when leaving all cards (relatedTarget is outside listContainer)
+      if (target && this.listContainer.contains(target)) return;
+      this.markers.highlight("");
+    };
+    this.listContainer.addEventListener("mouseout", this.onListMouseout);
+
     // Events
     this.bus.on("panel:toggle", (open) => {
       open ? this.open() : this.close();
@@ -142,6 +226,7 @@ export class Panel {
         if (focusable.length === 0) return;
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
+        if (!first || !last) return;
         const active = (shadowRoot as ShadowRoot).activeElement;
         if (ke.shiftKey && active === first) {
           ke.preventDefault();
@@ -161,6 +246,10 @@ export class Panel {
   }
 
   private onMarkerClick: EventListener;
+  private onListClick: (e: Event) => void;
+  private onListKeydown: (e: Event) => void;
+  private onListMouseover: (e: Event) => void;
+  private onListMouseout: (e: Event) => void;
 
   async open(): Promise<void> {
     if (this.isOpen) return;
@@ -318,15 +407,10 @@ export class Panel {
     // Expand button
     const expandBtn = document.createElement("button");
     expandBtn.className = "sp-card-expand";
+    expandBtn.dataset.action = "expand";
     setText(expandBtn, this.t("panel.showMore"));
     expandBtn.style.display = "none";
     expandBtn.setAttribute("aria-expanded", "false");
-    expandBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isExpanded = message.classList.toggle("sp-card-message--expanded");
-      setText(expandBtn, isExpanded ? this.t("panel.showLess") : this.t("panel.showMore"));
-      expandBtn.setAttribute("aria-expanded", String(isExpanded));
-    });
 
     // Check if text is clamped (after render)
     requestAnimationFrame(() => {
@@ -340,6 +424,7 @@ export class Panel {
 
     const resolveBtn = document.createElement("button");
     resolveBtn.className = "sp-btn-resolve";
+    resolveBtn.dataset.action = "resolve";
     if (isResolved) {
       resolveBtn.appendChild(parseSvg(ICON_UNDO));
       const span = document.createElement("span");
@@ -351,21 +436,14 @@ export class Panel {
       setText(span, ` ${this.t("panel.resolve")}`);
       resolveBtn.appendChild(span);
     }
-    resolveBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      await this.toggleResolve(feedback, resolveBtn);
-    });
 
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "sp-btn-delete";
+    deleteBtn.dataset.action = "delete";
     deleteBtn.appendChild(parseSvg(ICON_TRASH));
     const deleteLabel = document.createElement("span");
     setText(deleteLabel, ` ${this.t("panel.delete")}`);
     deleteBtn.appendChild(deleteLabel);
-    deleteBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      await this.deleteFeedback(feedback, deleteBtn);
-    });
 
     footer.appendChild(resolveBtn);
     footer.appendChild(deleteBtn);
@@ -377,27 +455,6 @@ export class Panel {
 
     card.appendChild(bar);
     card.appendChild(body);
-
-    // Hover: highlight corresponding marker
-    card.addEventListener("mouseenter", () => {
-      this.markers.highlight(feedback.id);
-    });
-
-    // Click: scroll page to annotation + show highlight
-    const activateCard = () => {
-      if (feedback.annotations.length > 0) {
-        const ann = feedback.annotations[0];
-        window.scrollTo({ left: ann.scrollX, top: ann.scrollY, behavior: "smooth" });
-        this.markers.pinHighlight(feedback);
-      }
-    };
-    card.addEventListener("click", activateCard);
-    card.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        activateCard();
-      }
-    });
 
     return card;
   }
@@ -578,6 +635,10 @@ export class Panel {
   destroy(): void {
     this.loadController?.abort();
     if (this.searchTimeout) clearTimeout(this.searchTimeout);
+    this.listContainer.removeEventListener("click", this.onListClick);
+    this.listContainer.removeEventListener("keydown", this.onListKeydown);
+    this.listContainer.removeEventListener("mouseover", this.onListMouseover);
+    this.listContainer.removeEventListener("mouseout", this.onListMouseout);
     document.removeEventListener("sp-marker-click", this.onMarkerClick);
     this.root.remove();
   }

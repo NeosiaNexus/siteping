@@ -15,6 +15,8 @@ export type {
   SitepingPublicEvents,
 } from "@siteping/core";
 
+export type { Identity } from "./identity.js";
+
 /**
  * Initialize the Siteping feedback widget.
  *

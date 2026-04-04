@@ -3,11 +3,12 @@
   "version": "0.9.2",
   "description": "Feedback widget for client review during development — annotations, bugs, questions directly on the site",
   "type": "module",
-  "sideEffects": true,
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "script": "./dist/index.global.js"
     }
   },
   "module": "./dist/index.js",
@@ -16,7 +17,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && node ../../scripts/fix-dts.mjs dist",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
@@ -52,10 +53,8 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "@medv/finder": "^3.2.0"
-  },
   "devDependencies": {
+    "@medv/finder": "^3.2.0",
     "@siteping/core": "workspace:*"
   }
 }

@@ -48,7 +48,10 @@ async function resilientFetch(url: string, init: RequestInit, retries = MAX_RETR
 function queueForRetry(endpoint: string, payload: FeedbackPayload): void {
   try {
     const raw = localStorage.getItem(RETRY_QUEUE_KEY);
-    const queue: Array<{ endpoint: string; payload: FeedbackPayload }> = raw ? JSON.parse(raw) : [];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    const queue: Array<{ endpoint: string; payload: FeedbackPayload }> = Array.isArray(parsed)
+      ? (parsed as Array<{ endpoint: string; payload: FeedbackPayload }>)
+      : [];
 
     // Cap queue size to prevent unbounded localStorage growth
     if (queue.length >= MAX_QUEUE_SIZE) {
@@ -67,7 +70,10 @@ export async function flushRetryQueue(endpoint: string): Promise<void> {
     const raw = localStorage.getItem(RETRY_QUEUE_KEY);
     if (!raw) return;
 
-    const queue: Array<{ endpoint: string; payload: FeedbackPayload }> = JSON.parse(raw);
+    const parsed: unknown = JSON.parse(raw);
+    const queue: Array<{ endpoint: string; payload: FeedbackPayload }> = Array.isArray(parsed)
+      ? (parsed as Array<{ endpoint: string; payload: FeedbackPayload }>)
+      : [];
 
     const toRetry = queue.filter((e) => e.endpoint === endpoint);
     if (toRetry.length === 0) return;
@@ -106,7 +112,10 @@ export async function flushRetryQueue(endpoint: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export class ApiClient {
-  constructor(private readonly endpoint: string) {}
+  constructor(
+    private readonly endpoint: string,
+    private readonly projectName: string,
+  ) {}
 
   async sendFeedback(payload: FeedbackPayload): Promise<FeedbackResponse> {
     try {
@@ -158,7 +167,7 @@ export class ApiClient {
     const response = await resilientFetch(this.endpoint, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: resolved ? "resolved" : "open" }),
+      body: JSON.stringify({ id, projectName: this.projectName, status: resolved ? "resolved" : "open" }),
     });
 
     if (!response.ok) {
@@ -172,7 +181,7 @@ export class ApiClient {
     const response = await resilientFetch(this.endpoint, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify({ id, projectName: this.projectName }),
     });
 
     if (!response.ok) {

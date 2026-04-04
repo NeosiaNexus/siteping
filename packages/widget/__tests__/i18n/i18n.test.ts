@@ -32,14 +32,14 @@ describe("createT", () => {
     expect(t("panel.close")).toBe("Close panel");
   });
 
-  it("falls back to French for unknown locale", () => {
+  it("falls back to English for unknown locale", () => {
     const t = createT("de");
-    expect(t("panel.close")).toBe("Fermer le panneau");
+    expect(t("panel.close")).toBe("Close panel");
   });
 
-  it("falls back to French for empty string locale", () => {
+  it("falls back to English for empty string locale", () => {
     const t = createT("");
-    expect(t("panel.close")).toBe("Fermer le panneau");
+    expect(t("panel.close")).toBe("Close panel");
   });
 
   it("is case-insensitive for locale prefix", () => {

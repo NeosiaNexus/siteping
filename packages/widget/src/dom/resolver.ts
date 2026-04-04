@@ -101,6 +101,7 @@ function smartScan(anchor: AnchorData): AnchorResolution | null {
 
   for (let i = 0; i < limit; i++) {
     const el = candidates[i];
+    if (!el) continue;
     const score = scoreCandidate(el, anchor);
     if (score > bestScore) {
       bestScore = score;

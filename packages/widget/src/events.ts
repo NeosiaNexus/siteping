@@ -1,4 +1,4 @@
-type Listener = (...args: any[]) => void;
+type Listener = (...args: unknown[]) => void;
 
 /**
  * Lightweight typed EventEmitter — zero dependencies.
