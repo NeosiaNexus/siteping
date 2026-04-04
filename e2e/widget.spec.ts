@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.request.get("http://localhost:3999/api/reset");
@@ -142,7 +142,7 @@ test.describe("Panel", () => {
     await s.click('[data-item-id="chat"]');
     await s.waitFor(".sp-empty-text");
     const text = await s.text(".sp-empty-text");
-    expect(text).toContain("Aucun feedback");
+    expect(text).toContain("No feedback yet");
   });
 
   test("has 5 filter chips", async ({ page }) => {
@@ -186,11 +186,11 @@ test.describe("Annotation mode", () => {
 
     await page.waitForFunction(() => {
       const btns = document.querySelectorAll("button");
-      return Array.from(btns).some((b) => b.textContent === "Annuler");
+      return Array.from(btns).some((b) => b.textContent === "Cancel");
     });
     const hasCancel = await page.evaluate(() => {
       const btns = document.querySelectorAll("button");
-      return Array.from(btns).some((b) => b.textContent === "Annuler");
+      return Array.from(btns).some((b) => b.textContent === "Cancel");
     });
     expect(hasCancel).toBe(true);
   });
@@ -264,7 +264,7 @@ test.describe("Full annotation flow", () => {
     await page.evaluate(() => {
       const btns = document.querySelectorAll("button");
       for (const b of btns) {
-        if (b.textContent === "Envoyer") {
+        if (b.textContent === "Send") {
           b.click();
           return;
         }
@@ -369,6 +369,537 @@ test.describe("Annotation toggle", () => {
       return c?.style.display !== "none";
     });
     expect(visible).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// New feature tests
+// ---------------------------------------------------------------------------
+
+test.describe("Double-init guard", () => {
+  test("calling initSiteping() twice does not create duplicate widgets", async ({ page }) => {
+    // Call initSiteping a second time from the page context
+    await page.evaluate(() => {
+      // Dynamic import to call initSiteping again
+      const script = document.createElement("script");
+      script.type = "module";
+      script.textContent = `
+        import { initSiteping } from '/widget.js';
+        window.__siteping2 = initSiteping({
+          endpoint: '/api/siteping',
+          projectName: 'e2e-test',
+          forceShow: true,
+          accentColor: '#6366f1',
+        });
+      `;
+      document.body.appendChild(script);
+    });
+
+    // Wait for the second script to execute
+    await page.waitForFunction(
+      () => (window as unknown as Record<string, unknown>).__siteping2 !== undefined,
+      undefined,
+      {
+        timeout: 3000,
+      },
+    );
+
+    // There should still be exactly one <siteping-widget> element
+    const widgetCount = await page.evaluate(() => document.querySelectorAll("siteping-widget").length);
+    expect(widgetCount).toBe(1);
+
+    // There should still be exactly one FAB inside the shadow root
+    const fabCount = await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      return host?.shadowRoot?.querySelectorAll(".sp-fab").length ?? 0;
+    });
+    expect(fabCount).toBe(1);
+  });
+});
+
+test.describe("Event delegation", () => {
+  /**
+   * Helper: create a feedback via API and open the panel so cards are visible.
+   * Returns the created feedback id.
+   */
+  async function createFeedbackAndOpenPanel(page: Page) {
+    // Seed a feedback via the API
+    const res = await page.request.post("http://localhost:3999/api/siteping", {
+      data: {
+        projectName: "e2e-test",
+        type: "bug",
+        message: "Delegation test feedback",
+        url: "http://localhost:3999",
+        viewport: "1280x720",
+        userAgent: "Playwright",
+        authorName: "Test",
+        authorEmail: "test@test.com",
+        annotations: [],
+      },
+    });
+    const feedback = await res.json();
+
+    // Open the panel
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="chat"]');
+    await s.click('[data-item-id="chat"]');
+    await s.waitFor(".sp-panel--open");
+
+    // Wait for at least one card to render
+    await s.waitFor(".sp-card");
+
+    return feedback.id as string;
+  }
+
+  test("clicking resolve button via delegation updates feedback status", async ({ page }) => {
+    await createFeedbackAndOpenPanel(page);
+
+    // Find the card and its resolve button
+    const hasResolveBtn = await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const card = host?.shadowRoot?.querySelector(".sp-card");
+      return card?.querySelector('[data-action="resolve"]') !== null;
+    });
+    expect(hasResolveBtn).toBe(true);
+
+    // Click the resolve button via evaluate (event delegation should handle it)
+    await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const resolveBtn = host?.shadowRoot?.querySelector('[data-action="resolve"]') as HTMLElement;
+      resolveBtn?.click();
+    });
+
+    // Wait for the card to get the resolved class (panel reloads after resolve)
+    await page.waitForFunction(
+      () => {
+        const host = document.querySelector("siteping-widget");
+        return host?.shadowRoot?.querySelector(".sp-card--resolved") !== null;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
+    const isResolved = await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      return host?.shadowRoot?.querySelector(".sp-card--resolved") !== null;
+    });
+    expect(isResolved).toBe(true);
+
+    // Verify via API that the status changed
+    const apiRes = await page.request.get("http://localhost:3999/api/siteping?projectName=e2e-test");
+    const data = await apiRes.json();
+    expect(data.feedbacks[0].status).toBe("resolved");
+  });
+
+  test("clicking resolve button on a resolved card reopens it", async ({ page }) => {
+    // Seed a feedback and resolve it via API
+    const createRes = await page.request.post("http://localhost:3999/api/siteping", {
+      data: {
+        projectName: "e2e-test",
+        type: "change",
+        message: "Reopen test feedback",
+        url: "http://localhost:3999",
+        viewport: "1280x720",
+        userAgent: "Playwright",
+        authorName: "Test",
+        authorEmail: "test@test.com",
+        annotations: [],
+      },
+    });
+    const fb = await createRes.json();
+
+    // Resolve it via PATCH
+    await page.request.patch("http://localhost:3999/api/siteping", {
+      data: { id: fb.id, status: "resolved" },
+    });
+
+    // Open the panel
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="chat"]');
+    await s.click('[data-item-id="chat"]');
+    await s.waitFor(".sp-panel--open");
+    await s.waitFor(".sp-card--resolved");
+
+    // Click the resolve (reopen) button
+    await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const card = host?.shadowRoot?.querySelector(".sp-card--resolved");
+      const reopenBtn = card?.querySelector('[data-action="resolve"]') as HTMLElement;
+      reopenBtn?.click();
+    });
+
+    // Wait for the card to lose the resolved class
+    await page.waitForFunction(
+      () => {
+        const host = document.querySelector("siteping-widget");
+        const cards = host?.shadowRoot?.querySelectorAll(".sp-card") ?? [];
+        // All cards should not have the resolved class (we only have one feedback)
+        return cards.length > 0 && host?.shadowRoot?.querySelector(".sp-card--resolved") === null;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
+
+    const apiRes = await page.request.get("http://localhost:3999/api/siteping?projectName=e2e-test");
+    const data = await apiRes.json();
+    expect(data.feedbacks[0].status).toBe("open");
+  });
+});
+
+test.describe("Default locale is English", () => {
+  test("FAB aria-label uses English text", async ({ page }) => {
+    const s = shadow(page);
+    const ariaLabel = await s.attr(".sp-fab", "aria-label");
+    // English: "Siteping — Feedback menu"
+    expect(ariaLabel).toBe("Siteping \u2014 Feedback menu");
+  });
+
+  test("radial menu items use English labels", async ({ page }) => {
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor(".sp-radial-item--open");
+
+    // Check the aria-labels on radial items
+    const chatLabel = await s.attr('[data-item-id="chat"]', "aria-label");
+    const annotateLabel = await s.attr('[data-item-id="annotate"]', "aria-label");
+    const toggleLabel = await s.attr('[data-item-id="toggle-annotations"]', "aria-label");
+
+    expect(chatLabel).toBe("Messages");
+    expect(annotateLabel).toBe("Annotate");
+    expect(toggleLabel).toBe("Annotations");
+  });
+
+  test("panel header and empty state use English text", async ({ page }) => {
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="chat"]');
+    await s.click('[data-item-id="chat"]');
+    await s.waitFor(".sp-panel--open");
+
+    // Panel title should be "Feedbacks" (same in both locales, but verifying)
+    const title = await s.text(".sp-panel-title");
+    expect(title).toBe("Feedbacks");
+
+    // Empty state should use English
+    await s.waitFor(".sp-empty-text");
+    const emptyText = await s.text(".sp-empty-text");
+    expect(emptyText).toContain("No feedback yet");
+  });
+
+  test("search placeholder uses English text", async ({ page }) => {
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="chat"]');
+    await s.click('[data-item-id="chat"]');
+    await s.waitFor(".sp-panel--open");
+
+    const placeholder = await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const input = host?.shadowRoot?.querySelector(".sp-search") as HTMLInputElement;
+      return input?.placeholder ?? null;
+    });
+    expect(placeholder).toBe("Search...");
+  });
+
+  test("annotation mode cancel button uses English text", async ({ page }) => {
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="annotate"]');
+    await s.click('[data-item-id="annotate"]');
+
+    await page.waitForFunction(() => {
+      const btns = document.querySelectorAll("button");
+      return Array.from(btns).some((b) => b.textContent === "Cancel");
+    });
+    const hasCancel = await page.evaluate(() => {
+      const btns = document.querySelectorAll("button");
+      return Array.from(btns).some((b) => b.textContent === "Cancel");
+    });
+    expect(hasCancel).toBe(true);
+  });
+});
+
+test.describe("Panel search", () => {
+  test("typing in search input filters feedbacks", async ({ page }) => {
+    // Seed two feedbacks with different messages
+    await page.request.post("http://localhost:3999/api/siteping", {
+      data: {
+        projectName: "e2e-test",
+        type: "bug",
+        message: "The login button is broken",
+        url: "http://localhost:3999",
+        viewport: "1280x720",
+        userAgent: "Playwright",
+        authorName: "Test",
+        authorEmail: "test@test.com",
+        annotations: [],
+      },
+    });
+    await page.request.post("http://localhost:3999/api/siteping", {
+      data: {
+        projectName: "e2e-test",
+        type: "question",
+        message: "How does the sidebar work",
+        url: "http://localhost:3999",
+        viewport: "1280x720",
+        userAgent: "Playwright",
+        authorName: "Test",
+        authorEmail: "test@test.com",
+        annotations: [],
+      },
+    });
+
+    // Open the panel
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="chat"]');
+    await s.click('[data-item-id="chat"]');
+    await s.waitFor(".sp-panel--open");
+
+    // Wait for both cards to render
+    await page.waitForFunction(
+      () => {
+        const host = document.querySelector("siteping-widget");
+        return (host?.shadowRoot?.querySelectorAll(".sp-card").length ?? 0) >= 2;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
+    expect(await s.count(".sp-card")).toBe(2);
+
+    // Type in the search input — "login" should match only the first feedback
+    await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const input = host?.shadowRoot?.querySelector(".sp-search") as HTMLInputElement;
+      input.value = "login";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // Wait for debounce (200ms) + API call + render
+    await page.waitForFunction(
+      () => {
+        const host = document.querySelector("siteping-widget");
+        return (host?.shadowRoot?.querySelectorAll(".sp-card").length ?? 0) === 1;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
+    expect(await s.count(".sp-card")).toBe(1);
+
+    // The remaining card should contain "login"
+    const cardText = await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const card = host?.shadowRoot?.querySelector(".sp-card-message");
+      return card?.textContent ?? "";
+    });
+    expect(cardText).toContain("login");
+  });
+
+  test("clearing search shows all feedbacks again", async ({ page }) => {
+    // Seed two feedbacks
+    await page.request.post("http://localhost:3999/api/siteping", {
+      data: {
+        projectName: "e2e-test",
+        type: "bug",
+        message: "Alpha feedback",
+        url: "http://localhost:3999",
+        viewport: "1280x720",
+        userAgent: "Playwright",
+        authorName: "Test",
+        authorEmail: "test@test.com",
+        annotations: [],
+      },
+    });
+    await page.request.post("http://localhost:3999/api/siteping", {
+      data: {
+        projectName: "e2e-test",
+        type: "change",
+        message: "Beta feedback",
+        url: "http://localhost:3999",
+        viewport: "1280x720",
+        userAgent: "Playwright",
+        authorName: "Test",
+        authorEmail: "test@test.com",
+        annotations: [],
+      },
+    });
+
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="chat"]');
+    await s.click('[data-item-id="chat"]');
+    await s.waitFor(".sp-panel--open");
+
+    // Wait for both cards
+    await page.waitForFunction(
+      () => {
+        const host = document.querySelector("siteping-widget");
+        return (host?.shadowRoot?.querySelectorAll(".sp-card").length ?? 0) >= 2;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
+
+    // Search for "Alpha"
+    await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const input = host?.shadowRoot?.querySelector(".sp-search") as HTMLInputElement;
+      input.value = "Alpha";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    await page.waitForFunction(
+      () => {
+        const host = document.querySelector("siteping-widget");
+        return (host?.shadowRoot?.querySelectorAll(".sp-card").length ?? 0) === 1;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
+
+    // Clear the search
+    await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const input = host?.shadowRoot?.querySelector(".sp-search") as HTMLInputElement;
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // All feedbacks should reappear
+    await page.waitForFunction(
+      () => {
+        const host = document.querySelector("siteping-widget");
+        return (host?.shadowRoot?.querySelectorAll(".sp-card").length ?? 0) >= 2;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
+    expect(await s.count(".sp-card")).toBe(2);
+  });
+
+  test("search with no matches shows empty state", async ({ page }) => {
+    // Seed a feedback
+    await page.request.post("http://localhost:3999/api/siteping", {
+      data: {
+        projectName: "e2e-test",
+        type: "bug",
+        message: "Some real feedback",
+        url: "http://localhost:3999",
+        viewport: "1280x720",
+        userAgent: "Playwright",
+        authorName: "Test",
+        authorEmail: "test@test.com",
+        annotations: [],
+      },
+    });
+
+    const s = shadow(page);
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="chat"]');
+    await s.click('[data-item-id="chat"]');
+    await s.waitFor(".sp-panel--open");
+    await s.waitFor(".sp-card");
+
+    // Search for something that does not exist
+    await page.evaluate(() => {
+      const host = document.querySelector("siteping-widget");
+      const input = host?.shadowRoot?.querySelector(".sp-search") as HTMLInputElement;
+      input.value = "xyznonexistent";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    // Should show empty state
+    await s.waitFor(".sp-empty-text", { timeout: 5000 });
+    const emptyText = await s.text(".sp-empty-text");
+    expect(emptyText).toContain("No feedback yet");
+  });
+});
+
+test.describe("Touch annotation", () => {
+  test("tap on overlay creates an annotation rectangle", async ({ page }) => {
+    const s = shadow(page);
+
+    // Enter annotation mode
+    await s.click(".sp-fab");
+    await s.waitFor('[data-item-id="annotate"]');
+    await s.click('[data-item-id="annotate"]');
+    await page.waitForFunction(() => !!document.querySelector("div[style*='crosshair']"));
+
+    // Use touch events to simulate drawing a rectangle
+    const box = await page.locator("#target-element").boundingBox();
+
+    // Simulate touch start + move + end via dispatching touch events
+    await page.evaluate(
+      ({ x, y, endX, endY }) => {
+        const overlay = document.querySelector("div[style*='crosshair']") as HTMLElement;
+        if (!overlay) return;
+
+        const createTouch = (clientX: number, clientY: number) =>
+          new Touch({
+            identifier: 0,
+            target: overlay,
+            clientX,
+            clientY,
+            pageX: clientX,
+            pageY: clientY,
+          });
+
+        overlay.dispatchEvent(
+          new TouchEvent("touchstart", {
+            bubbles: true,
+            touches: [createTouch(x, y)],
+            changedTouches: [createTouch(x, y)],
+          }),
+        );
+
+        // Move in steps to simulate drag
+        const steps = 5;
+        for (let i = 1; i <= steps; i++) {
+          const cx = x + ((endX - x) * i) / steps;
+          const cy = y + ((endY - y) * i) / steps;
+          overlay.dispatchEvent(
+            new TouchEvent("touchmove", {
+              bubbles: true,
+              touches: [createTouch(cx, cy)],
+              changedTouches: [createTouch(cx, cy)],
+            }),
+          );
+        }
+
+        overlay.dispatchEvent(
+          new TouchEvent("touchend", {
+            bubbles: true,
+            touches: [],
+            changedTouches: [createTouch(endX, endY)],
+          }),
+        );
+      },
+      {
+        x: box!.x + 10,
+        y: box!.y + 10,
+        endX: box!.x + 200,
+        endY: box!.y + 60,
+      },
+    );
+
+    // After touch end, the feedback popup should appear (type selection buttons)
+    // or a rectangle should have been drawn
+    const hasPopupOrRect = await page.waitForFunction(
+      () => {
+        // Check for popup (type selection)
+        const hasPopup = !!document.querySelector("button[data-type='bug']");
+        // Check for drawn rectangle
+        const divs = document.querySelectorAll("div[style*='pointer-events']");
+        const hasRect = Array.from(divs).some(
+          (d) => (d as HTMLElement).style.width && parseInt((d as HTMLElement).style.width, 10) > 50,
+        );
+        return hasPopup || hasRect;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
+    expect(hasPopupOrRect).toBeTruthy();
   });
 });
 
