@@ -222,14 +222,17 @@ test.describe("Annotation mode", () => {
     await page.mouse.down();
     await page.mouse.move(box!.x + 200, box!.y + 50, { steps: 5 });
 
-    // A rectangle div with border should exist
-    const hasRect = await page.evaluate(() => {
-      const divs = document.querySelectorAll("div[style*='pointer-events']");
-      return Array.from(divs).some(
-        (d) => (d as HTMLElement).style.width && parseInt((d as HTMLElement).style.width, 10) > 50,
-      );
-    });
-    expect(hasRect).toBe(true);
+    // A rectangle div with border should exist (poll — WebKit needs extra frames)
+    await page.waitForFunction(
+      () => {
+        const divs = document.querySelectorAll("div[style*='pointer-events']");
+        return Array.from(divs).some(
+          (d) => (d as HTMLElement).style.width && parseInt((d as HTMLElement).style.width, 10) > 50,
+        );
+      },
+      undefined,
+      { timeout: 3000 },
+    );
 
     await page.mouse.up();
   });
@@ -327,7 +330,16 @@ test.describe("Full annotation flow", () => {
     });
     expect(markerCount).toBeGreaterThanOrEqual(1);
 
-    // 8. Verify API persistence
+    // 8. Verify API persistence (poll — POST may still be in flight)
+    await page.waitForFunction(
+      async () => {
+        const r = await fetch("http://localhost:3999/api/siteping?projectName=e2e-test");
+        const d = await r.json();
+        return d.total >= 1;
+      },
+      undefined,
+      { timeout: 5000 },
+    );
     const res = await page.request.get("http://localhost:3999/api/siteping?projectName=e2e-test");
     const data = await res.json();
     expect(data.total).toBe(1);
@@ -817,7 +829,8 @@ test.describe("Panel search", () => {
 });
 
 test.describe("Touch annotation", () => {
-  test("tap on overlay creates an annotation rectangle", async ({ page }) => {
+  test("tap on overlay creates an annotation rectangle", async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "TouchEvent constructor not supported in Firefox/WebKit headless");
     const s = shadow(page);
 
     // Enter annotation mode
