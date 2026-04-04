@@ -25,6 +25,8 @@ export class Panel {
   private isOpen = false;
   private searchTimeout: ReturnType<typeof setTimeout> | null = null;
   private loadController: AbortController | null = null;
+  /** Tracks feedback IDs with in-flight mutations to prevent spam-click race conditions */
+  private pendingMutations = new Set<string>();
 
   constructor(
     shadowRoot: ShadowRoot,
@@ -146,9 +148,11 @@ export class Panel {
           setText(actionEl, isExpanded ? this.t("panel.showLess") : this.t("panel.showMore"));
           actionEl.setAttribute("aria-expanded", String(isExpanded));
         } else if (action === "resolve") {
+          if (this.pendingMutations.has(feedback.id)) return;
           const btn = actionEl as HTMLButtonElement;
           this.toggleResolve(feedback, btn).catch(() => {});
         } else if (action === "delete") {
+          if (this.pendingMutations.has(feedback.id)) return;
           const btn = actionEl as HTMLButtonElement;
           this.deleteFeedback(feedback, btn).catch(() => {});
         }
@@ -460,14 +464,20 @@ export class Panel {
   }
 
   private async deleteFeedback(feedback: FeedbackResponse, btn: HTMLButtonElement): Promise<void> {
+    this.pendingMutations.add(feedback.id);
     btn.disabled = true;
     try {
       await this.client.deleteFeedback(feedback.id);
       this.bus.emit("feedback:deleted", feedback.id);
       await this.loadFeedbacks();
     } catch (error) {
+      this.pendingMutations.delete(feedback.id);
       btn.disabled = false;
       this.bus.emit("feedback:error", error instanceof Error ? error : new Error(String(error)));
+    } finally {
+      if (this.pendingMutations.has(feedback.id)) {
+        setTimeout(() => this.pendingMutations.delete(feedback.id), 300);
+      }
     }
   }
 
@@ -581,15 +591,21 @@ export class Panel {
   }
 
   private async toggleResolve(feedback: FeedbackResponse, btn: HTMLButtonElement): Promise<void> {
-    // Disable button during async operation
+    this.pendingMutations.add(feedback.id);
     btn.disabled = true;
     try {
       const newResolved = feedback.status !== "resolved";
       await this.client.resolveFeedback(feedback.id, newResolved);
       await this.loadFeedbacks();
     } catch (error) {
+      this.pendingMutations.delete(feedback.id);
       btn.disabled = false;
       this.bus.emit("feedback:error", error instanceof Error ? error : new Error(String(error)));
+    } finally {
+      // Brief cooldown prevents spam-click from immediately toggling back
+      if (this.pendingMutations.has(feedback.id)) {
+        setTimeout(() => this.pendingMutations.delete(feedback.id), 300);
+      }
     }
   }
 
