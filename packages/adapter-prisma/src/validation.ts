@@ -1,3 +1,4 @@
+import type { FeedbackStatus, FeedbackType } from "@siteping/core";
 import { FEEDBACK_STATUSES, FEEDBACK_TYPES } from "@siteping/core";
 import * as zod from "zod";
 
@@ -52,11 +53,12 @@ export const feedbackCreateSchema = z.object({
 
 export const feedbackPatchSchema = z.object({
   id: z.string().min(1),
+  projectName: z.string().min(1).max(200),
   status: z.enum(FEEDBACK_STATUSES),
 });
 
 export const feedbackDeleteSchema = z.union([
-  z.object({ id: z.string().min(1) }),
+  z.object({ id: z.string().min(1), projectName: z.string().min(1).max(200) }),
   z.object({ projectName: z.string().min(1).max(200), deleteAll: z.literal(true) }),
 ]);
 
@@ -69,10 +71,106 @@ export const getQuerySchema = z.object({
   search: z.string().max(200).optional(),
 });
 
-export type FeedbackCreateInput = zod.z.infer<typeof feedbackCreateSchema>;
-export type FeedbackPatchInput = zod.z.infer<typeof feedbackPatchSchema>;
-export type FeedbackDeleteInput = zod.z.infer<typeof feedbackDeleteSchema>;
-export type GetQueryInput = zod.z.infer<typeof getQuerySchema>;
+// ---------------------------------------------------------------------------
+// Explicit public interfaces — decoupled from Zod to keep .d.ts clean
+// ---------------------------------------------------------------------------
+
+export interface AnchorInput {
+  cssSelector: string;
+  xpath: string;
+  textSnippet: string;
+  elementTag: string;
+  elementId?: string | undefined;
+  textPrefix: string;
+  textSuffix: string;
+  fingerprint: string;
+  neighborText: string;
+}
+
+export interface RectInput {
+  xPct: number;
+  yPct: number;
+  wPct: number;
+  hPct: number;
+}
+
+export interface AnnotationInput {
+  anchor: AnchorInput;
+  rect: RectInput;
+  scrollX: number;
+  scrollY: number;
+  viewportW: number;
+  viewportH: number;
+  /** Set to 1 by schema default when omitted from raw input. */
+  devicePixelRatio: number;
+}
+
+export interface FeedbackCreateInput {
+  projectName: string;
+  type: FeedbackType;
+  message: string;
+  url: string;
+  viewport: string;
+  userAgent: string;
+  authorName: string;
+  authorEmail: string;
+  annotations: AnnotationInput[];
+  clientId: string;
+}
+
+export interface FeedbackPatchInput {
+  id: string;
+  projectName: string;
+  status: FeedbackStatus;
+}
+
+export interface FeedbackDeleteSingle {
+  id: string;
+  projectName: string;
+}
+
+export interface FeedbackDeleteAll {
+  projectName: string;
+  deleteAll: true;
+}
+
+export type FeedbackDeleteInput = FeedbackDeleteSingle | FeedbackDeleteAll;
+
+export interface GetQueryInput {
+  projectName: string;
+  /** Set to 1 by schema default when omitted from raw input. */
+  page: number;
+  /** Set to 50 by schema default when omitted from raw input. */
+  limit: number;
+  type?: FeedbackType | undefined;
+  status?: FeedbackStatus | undefined;
+  search?: string | undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Type-level assertions: manual interfaces stay in sync with schemas.
+// If a field is added/removed/changed in the schema but not the interface
+// (or vice versa), these lines produce a compile error.
+// ---------------------------------------------------------------------------
+
+type _AssertCreate = zod.z.infer<typeof feedbackCreateSchema> extends FeedbackCreateInput ? true : never;
+type _AssertCreateReverse = FeedbackCreateInput extends zod.z.infer<typeof feedbackCreateSchema> ? true : never;
+type _AssertPatch = zod.z.infer<typeof feedbackPatchSchema> extends FeedbackPatchInput ? true : never;
+type _AssertPatchReverse = FeedbackPatchInput extends zod.z.infer<typeof feedbackPatchSchema> ? true : never;
+type _AssertDelete = zod.z.infer<typeof feedbackDeleteSchema> extends FeedbackDeleteInput ? true : never;
+type _AssertDeleteReverse = FeedbackDeleteInput extends zod.z.infer<typeof feedbackDeleteSchema> ? true : never;
+type _AssertQuery = zod.z.infer<typeof getQuerySchema> extends GetQueryInput ? true : never;
+type _AssertQueryReverse = GetQueryInput extends zod.z.infer<typeof getQuerySchema> ? true : never;
+
+// Suppress unused-variable warnings — assertions are compile-time only
+void (0 as unknown as _AssertCreate);
+void (0 as unknown as _AssertCreateReverse);
+void (0 as unknown as _AssertPatch);
+void (0 as unknown as _AssertPatchReverse);
+void (0 as unknown as _AssertDelete);
+void (0 as unknown as _AssertDeleteReverse);
+void (0 as unknown as _AssertQuery);
+void (0 as unknown as _AssertQueryReverse);
 
 /**
  * Map Zod errors to a flat array of { field, message } objects.

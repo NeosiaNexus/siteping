@@ -23,7 +23,7 @@ npm install @siteping/adapter-prisma
 import { createSitepingHandler } from '@siteping/adapter-prisma'
 import { prisma } from '@/lib/prisma'
 
-export const { GET, POST, PATCH, DELETE } = createSitepingHandler({ prisma })
+export const { GET, POST, PATCH, DELETE, OPTIONS } = createSitepingHandler({ prisma })
 ```
 
 ## API Endpoints
@@ -86,6 +86,63 @@ Use the CLI to set up models automatically:
 npx @siteping/cli init
 npx prisma db push
 ```
+
+## Authentication
+
+By default, all endpoints are publicly accessible. To protect read/update/delete operations, pass an `apiKey`:
+
+```ts
+export const { GET, POST, PATCH, DELETE, OPTIONS } = createSitepingHandler({
+  prisma,
+  apiKey: process.env.SITEPING_API_KEY,
+  allowedOrigins: ["https://your-site.com"],
+})
+```
+
+When `apiKey` is set:
+
+- **POST** and **OPTIONS** remain public (the browser widget needs to submit feedback and perform CORS preflight without authentication).
+- **GET**, **PATCH**, and **DELETE** require a `Bearer <apiKey>` token in the `Authorization` header.
+
+## Framework Compatibility
+
+The handler uses the **Web Standard `Request`/`Response` API** and works natively with:
+
+- **Next.js App Router** (route handlers)
+- **Bun** (`Bun.serve`)
+- **Deno** (`Deno.serve`)
+- **Hono** (lightweight Web Standard framework)
+
+For **Express** or **Fastify**, you need an adapter to convert between `(req, res)` and `Request`/`Response`. If you're starting a new project and want something lightweight, [Hono](https://hono.dev) is a good Web Standard alternative.
+
+## Edge Runtime
+
+The adapter uses `node:crypto` (`timingSafeEqual`) for timing-safe API key comparison. This requires the **Node.js runtime** and is not available in pure edge/V8 environments.
+
+- **Cloudflare Workers**: enable the [`nodejs_compat`](https://developers.cloudflare.com/workers/runtime-apis/nodejs/) compatibility flag.
+- **Vercel Edge Runtime**: use the Node.js runtime (`export const runtime = "nodejs"`) instead of the edge runtime.
+
+## DELETE Request Body
+
+DELETE operations send their payload in the **request body** (JSON), not as URL query parameters. This follows the REST convention for structured delete requests (single item by `id`, or bulk delete by `projectName`).
+
+> **Note:** Some CDNs and reverse proxies strip the body from DELETE requests. If you experience issues, verify that your infrastructure forwards DELETE bodies correctly.
+
+## Privacy and Data Collection
+
+The widget collects and stores the following data per feedback submission:
+
+| Data | Purpose |
+|------|---------|
+| Author name and email | Identify the feedback author |
+| Feedback message | The feedback content itself |
+| Page URL | Where the feedback was submitted (sensitive query params like `token`, `key`, `password` are stripped) |
+| Viewport size | Reproduce layout context |
+| User agent | Browser/device identification |
+| CSS selector, XPath, text snippet | Anchor annotations to specific DOM elements |
+| Annotation coordinates (% relative) | Position annotations on the page |
+
+**Not collected:** screenshots, full DOM snapshots, cookies, localStorage, or any data beyond what is listed above.
 
 ## Related Packages
 

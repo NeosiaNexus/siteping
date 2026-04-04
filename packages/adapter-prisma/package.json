@@ -18,7 +18,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && node ../../scripts/fix-dts.mjs dist",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
@@ -48,7 +48,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=18"
   },
   "dependencies": {
     "zod": "^3.24.0"

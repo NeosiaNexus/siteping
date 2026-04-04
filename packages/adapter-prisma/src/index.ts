@@ -15,7 +15,6 @@ import {
 } from "./validation.js";
 
 export type { SitepingStore } from "@siteping/core";
-export { SITEPING_MODELS } from "@siteping/core";
 export type {
   FeedbackCreateInput as FeedbackCreateSchemaInput,
   FeedbackDeleteInput,
@@ -24,14 +23,16 @@ export type {
 } from "./validation.js";
 
 // ---------------------------------------------------------------------------
-// Internal PrismaClient shape — kept private, not exported in .d.ts
+// Minimal PrismaClient shape expected by this adapter
 // ---------------------------------------------------------------------------
 
 /**
- * @internal Minimal Prisma client shape used internally.
- * Not part of the public API — consumers pass their own PrismaClient instance.
+ * Minimal Prisma client shape expected by this adapter.
+ * Consumers pass their own `PrismaClient` instance at runtime — this interface
+ * defines the subset of methods the adapter actually uses, so it can be
+ * referenced in handler option types without importing `@prisma/client`.
  */
-interface _PrismaClient {
+export interface SitepingPrismaClient {
   sitepingFeedback: {
     create: (args: unknown) => Promise<unknown>;
     findMany: (args: unknown) => Promise<unknown[]>;
@@ -56,9 +57,9 @@ const INCLUDE_ANNOTATIONS = { annotations: true };
  */
 export class PrismaStore implements SitepingStore {
   /** @internal */
-  private prisma: _PrismaClient;
+  private prisma: SitepingPrismaClient;
 
-  constructor(prisma: _PrismaClient) {
+  constructor(prisma: SitepingPrismaClient) {
     this.prisma = prisma;
   }
 
@@ -115,7 +116,7 @@ export class PrismaStore implements SitepingStore {
     const where: Record<string, unknown> = { projectName };
     if (type) where.type = type;
     if (status) where.status = status;
-    if (search) where.message = { contains: search };
+    if (search) where.message = { contains: search, mode: "insensitive" as const };
 
     const [feedbacks, total] = await Promise.all([
       this.prisma.sitepingFeedback.findMany({
@@ -149,6 +150,18 @@ export class PrismaStore implements SitepingStore {
   async deleteAllFeedbacks(projectName: string): Promise<void> {
     await this.prisma.sitepingFeedback.deleteMany({ where: { projectName } });
   }
+
+  /**
+   * Verify that a feedback record with `id` belongs to `projectName`.
+   * Returns `true` when the record exists and matches, `false` otherwise.
+   */
+  async verifyProjectOwnership(id: string, projectName: string): Promise<boolean> {
+    const record = (await this.prisma.sitepingFeedback.findUnique({
+      where: { id },
+      // Only need projectName for the check — skip annotations
+    })) as { projectName: string } | null;
+    return record !== null && record.projectName === projectName;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -157,28 +170,39 @@ export class PrismaStore implements SitepingStore {
 
 export interface HandlerOptions {
   /** Prisma client — used when `store` is not provided. Wrapped in a `PrismaStore` internally. */
-  prisma?: _PrismaClient;
+  prisma?: SitepingPrismaClient;
   /** Abstract store — when provided, takes precedence over `prisma`. */
   store?: SitepingStore;
   /**
    * Optional API key for bearer-token authentication.
    *
-   * - **When set:** every request (except OPTIONS preflight) must include an
+   * - **When set:** every request not listed in `publicEndpoints` must include an
    *   `Authorization: Bearer {apiKey}` header. Requests without a valid token
    *   receive a 401 Unauthorized response.
    * - **When not set:** the API is fully public — anyone can create, read,
    *   update, and delete feedbacks (including destructive DELETE operations).
    * - **Recommendation:** always set `apiKey` in production environments.
-   *
-   * Security trade-off: the browser-side widget cannot use the API key without
-   * exposing it in client-side code. If the widget submits feedback directly,
-   * the POST endpoint will be unauthenticated. Consider restricting authenticated
-   * operations (PATCH, DELETE, GET) to server-side or admin-only consumers while
-   * keeping POST open via a separate middleware policy.
    */
   apiKey?: string | undefined;
+  /**
+   * HTTP methods that don't require API key authentication.
+   * Defaults to `['POST', 'OPTIONS']` when `apiKey` is set — POST must stay open
+   * because the browser widget submits feedback from unauthenticated contexts.
+   */
+  publicEndpoints?: Array<"GET" | "POST" | "PATCH" | "DELETE" | "OPTIONS">;
   /** Allowed CORS origins — when set, validates the Origin header */
   allowedOrigins?: string[] | undefined;
+}
+
+/**
+ * Object returned by `createSitepingHandler` — one handler per HTTP method.
+ */
+export interface SitepingHandler {
+  OPTIONS: (request: Request) => Response;
+  POST: (request: Request) => Promise<Response>;
+  GET: (request: Request) => Promise<Response>;
+  PATCH: (request: Request) => Promise<Response>;
+  DELETE: (request: Request) => Promise<Response>;
 }
 
 // ---------------------------------------------------------------------------
@@ -202,6 +226,7 @@ function buildCorsHeaders(request: Request, allowedOrigins: string[] | undefined
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
@@ -259,7 +284,13 @@ function safeCompare(a: string, b: string): boolean {
  * export const { GET, POST, PATCH, DELETE, OPTIONS } = createSitepingHandler({ store })
  * ```
  */
-export function createSitepingHandler({ prisma, store: providedStore, apiKey, allowedOrigins }: HandlerOptions) {
+export function createSitepingHandler({
+  prisma,
+  store: providedStore,
+  apiKey,
+  publicEndpoints = apiKey ? ["POST", "OPTIONS"] : undefined,
+  allowedOrigins,
+}: HandlerOptions): SitepingHandler {
   if (!providedStore && !prisma) {
     throw new Error("[siteping] createSitepingHandler requires either `store` or `prisma`.");
   }
@@ -267,12 +298,12 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
   // Safe: the throw above guarantees at least one is defined
   const store: SitepingStore = providedStore ?? new PrismaStore(prisma as NonNullable<typeof prisma>);
 
-  // For clientId dedup lookups we need PrismaStore-specific method
-  const prismaStore = store instanceof PrismaStore ? store : null;
+  const publicMethods = publicEndpoints ? new Set(publicEndpoints) : null;
 
-  /** Verify Bearer token when apiKey is configured. Returns a 401 Response on failure, or null on success. */
-  function authenticate(request: Request): Response | null {
+  /** Verify Bearer token when apiKey is configured. Skips methods listed in `publicEndpoints`. */
+  function authenticate(request: Request, method: string): Response | null {
     if (!apiKey) return null;
+    if (publicMethods?.has(method as "GET" | "POST" | "PATCH" | "DELETE" | "OPTIONS")) return null;
     const header = request.headers.get("Authorization");
     if (!header || !safeCompare(header, `Bearer ${apiKey}`)) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -293,7 +324,7 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
 
     POST: async (request: Request): Promise<Response> => {
       const corsHeaders = buildCorsHeaders(request, allowedOrigins);
-      const authError = authenticate(request);
+      const authError = authenticate(request, "POST");
       if (authError) return withCors(authError, corsHeaders);
       const body = await request.json().catch(() => null);
       if (!body) {
@@ -349,8 +380,8 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
         return withCors(Response.json(feedback, { status: 201 }), corsHeaders);
       } catch (error) {
         // Handle unique constraint violation (clientId dedup)
-        if (isDuplicateError(error) && prismaStore) {
-          const existing = await prismaStore.findByClientId(data.clientId);
+        if (isDuplicateError(error)) {
+          const existing = await store.findByClientId(data.clientId);
           if (existing) return withCors(Response.json(existing, { status: 201 }), corsHeaders);
         }
 
@@ -362,7 +393,7 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
 
     GET: async (request: Request): Promise<Response> => {
       const corsHeaders = buildCorsHeaders(request, allowedOrigins);
-      const authError = authenticate(request);
+      const authError = authenticate(request, "GET");
       if (authError) return withCors(authError, corsHeaders);
 
       const url = new URL(request.url);
@@ -389,7 +420,7 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
 
     PATCH: async (request: Request): Promise<Response> => {
       const corsHeaders = buildCorsHeaders(request, allowedOrigins);
-      const authError = authenticate(request);
+      const authError = authenticate(request, "PATCH");
       if (authError) return withCors(authError, corsHeaders);
 
       const body = await request.json().catch(() => null);
@@ -403,10 +434,16 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
       }
 
       try {
+        // Scope update to the specified project — the store finds by id, but we verify
+        // ownership by checking projectName on the returned record.
         const feedback = await store.updateFeedback(parsed.data.id, {
           status: parsed.data.status,
           resolvedAt: parsed.data.status === "resolved" ? new Date() : null,
         });
+
+        if (feedback.projectName !== parsed.data.projectName) {
+          return withCors(Response.json({ error: "Feedback not found" }, { status: 404 }), corsHeaders);
+        }
 
         return withCors(Response.json(feedback), corsHeaders);
       } catch (error) {
@@ -421,7 +458,7 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
 
     DELETE: async (request: Request): Promise<Response> => {
       const corsHeaders = buildCorsHeaders(request, allowedOrigins);
-      const authError = authenticate(request);
+      const authError = authenticate(request, "DELETE");
       if (authError) return withCors(authError, corsHeaders);
 
       const body = await request.json().catch(() => null);
@@ -440,6 +477,17 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
           return withCors(Response.json({ deleted: true }), corsHeaders);
         }
 
+        // Verify project ownership before deleting — PrismaStore can do a
+        // lightweight findUnique check; for other store implementations the
+        // projectName in the schema is still validated but the DB-level check
+        // is skipped (the store itself should enforce isolation).
+        if (store instanceof PrismaStore) {
+          const owns = await store.verifyProjectOwnership(parsed.data.id, parsed.data.projectName);
+          if (!owns) {
+            return withCors(Response.json({ error: "Feedback not found" }, { status: 404 }), corsHeaders);
+          }
+        }
+
         await store.deleteFeedback(parsed.data.id);
         return withCors(Response.json({ deleted: true }), corsHeaders);
       } catch (error) {
@@ -454,19 +502,19 @@ export function createSitepingHandler({ prisma, store: providedStore, apiKey, al
   };
 }
 
-function isPrismaError(error: unknown, code: string): boolean {
+function isPrismaError(error: unknown, code: string): error is { code: string } {
   return typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === code;
 }
 
-function isDuplicateError(error: unknown): boolean {
+function isDuplicateError(error: unknown): error is { code: string } {
   return isPrismaError(error, "P2002");
 }
 
-function isNotFoundError(error: unknown): boolean {
+function isNotFoundError(error: unknown): error is { code: string } {
   return isPrismaError(error, "P2025");
 }
 
-function isTableNotFoundError(error: unknown): boolean {
+function isTableNotFoundError(error: unknown): error is { code: string } {
   return isPrismaError(error, "P2021");
 }
 

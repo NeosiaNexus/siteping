@@ -155,6 +155,7 @@ describe("feedbackPatchSchema", () => {
   it("accepts valid resolve", () => {
     const result = feedbackPatchSchema.safeParse({
       id: "abc123",
+      projectName: "test-project",
       status: "resolved",
     });
     expect(result.success).toBe(true);
@@ -163,6 +164,7 @@ describe("feedbackPatchSchema", () => {
   it("accepts valid unresolve", () => {
     const result = feedbackPatchSchema.safeParse({
       id: "abc123",
+      projectName: "test-project",
       status: "open",
     });
     expect(result.success).toBe(true);
