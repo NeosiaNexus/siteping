@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { en } from "../../src/i18n/en.js";
 import { fr } from "../../src/i18n/fr.js";
 import { createT, getTypeLabel } from "../../src/i18n/index.js";
+import { ru } from "../../src/i18n/ru.js";
 
 // ---------------------------------------------------------------------------
 // createT — locale resolution
@@ -20,6 +21,13 @@ describe("createT", () => {
     expect(t("panel.title")).toBe("Feedbacks");
     expect(t("panel.close")).toBe("Close panel");
     expect(t("popup.submit")).toBe("Send");
+  });
+
+  it("returns Russian translations for 'ru'", () => {
+    const t = createT("ru");
+    expect(t("panel.title")).toBe("Обратная связь");
+    expect(t("panel.close")).toBe("Закрыть панель");
+    expect(t("popup.submit")).toBe("Отправить");
   });
 
   it("resolves language prefix from full locale tag (e.g. 'fr-FR')", () => {
@@ -90,9 +98,14 @@ describe("getTypeLabel", () => {
 describe("translation completeness", () => {
   const enKeys = Object.keys(en).sort();
   const frKeys = Object.keys(fr).sort();
+  const ruKeys = Object.keys(ru).sort();
 
   it("en.ts and fr.ts have the same set of keys", () => {
     expect(enKeys).toEqual(frKeys);
+  });
+
+  it("en.ts and ru.ts have the same set of keys", () => {
+    expect(enKeys).toEqual(ruKeys);
   });
 
   it("no translation value is an empty string in fr.ts", () => {
@@ -107,6 +120,12 @@ describe("translation completeness", () => {
     }
   });
 
+  it("no translation value is an empty string in ru.ts", () => {
+    for (const [key, value] of Object.entries(ru)) {
+      expect(value, `ru.ts key "${key}" is empty`).not.toBe("");
+    }
+  });
+
   it("all keys in en.ts exist in fr.ts", () => {
     for (const key of enKeys) {
       expect(fr).toHaveProperty(key);
@@ -116,6 +135,12 @@ describe("translation completeness", () => {
   it("all keys in fr.ts exist in en.ts", () => {
     for (const key of frKeys) {
       expect(en).toHaveProperty(key);
+    }
+  });
+
+  it("all keys in en.ts exist in ru.ts", () => {
+    for (const key of enKeys) {
+      expect(ru).toHaveProperty(key);
     }
   });
 });

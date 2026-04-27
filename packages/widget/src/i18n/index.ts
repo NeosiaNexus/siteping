@@ -6,8 +6,9 @@ export type { TFunction, Translations } from "./types.js";
 // For tree-shaking in consumer apps, use dynamic import() with a bundler plugin.
 import { en } from "./en.js";
 import { fr } from "./fr.js";
+import { ru } from "./ru.js";
 
-const LOCALES: Record<string, Translations> = { fr, en };
+const LOCALES: Record<string, Translations> = { fr, en, ru };
 
 /** Register a custom locale at runtime. */
 export function registerLocale(code: string, translations: Translations): void {
