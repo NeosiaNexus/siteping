@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { de } from "../../src/i18n/de.js";
 import { en } from "../../src/i18n/en.js";
+import { es } from "../../src/i18n/es.js";
 import { fr } from "../../src/i18n/fr.js";
 import { createT, getTypeLabel } from "../../src/i18n/index.js";
 import { it as italian } from "../../src/i18n/it.js";
@@ -24,6 +25,13 @@ describe("createT", () => {
     expect(t("panel.title")).toBe("Feedbacks");
     expect(t("panel.close")).toBe("Close panel");
     expect(t("popup.submit")).toBe("Send");
+  });
+
+  it("returns Spanish translations for 'es' and 'es-MX'", () => {
+    const t = createT("es-MX");
+    expect(t("panel.close")).toBe("Cerrar panel");
+    expect(t("popup.submit")).toBe("Enviar");
+    expect(t("type.question")).toBe("Pregunta");
   });
 
   it("returns Russian translations for 'ru'", () => {
@@ -65,7 +73,7 @@ describe("createT", () => {
   });
 
   it("falls back to English for unknown locale", () => {
-    const t = createT("es");
+    const t = createT("zz");
     expect(t("panel.close")).toBe("Close panel");
   });
 
@@ -122,6 +130,7 @@ describe("getTypeLabel", () => {
 describe("translation completeness", () => {
   const enKeys = Object.keys(en).sort();
   const deKeys = Object.keys(de).sort();
+  const esKeys = Object.keys(es).sort();
   const frKeys = Object.keys(fr).sort();
   const itKeys = Object.keys(italian).sort();
   const ptKeys = Object.keys(pt).sort();
@@ -133,6 +142,10 @@ describe("translation completeness", () => {
 
   it("en.ts and de.ts have the same set of keys", () => {
     expect(enKeys).toEqual(deKeys);
+  });
+
+  it("en.ts and es.ts have the same set of keys", () => {
+    expect(enKeys).toEqual(esKeys);
   });
 
   it("en.ts and it.ts have the same set of keys", () => {
@@ -156,6 +169,12 @@ describe("translation completeness", () => {
   it("no translation value is an empty string in de.ts", () => {
     for (const [key, value] of Object.entries(de)) {
       expect(value, `de.ts key "${key}" is empty`).not.toBe("");
+    }
+  });
+
+  it("no translation value is an empty string in es.ts", () => {
+    for (const [key, value] of Object.entries(es)) {
+      expect(value, `es.ts key "${key}" is empty`).not.toBe("");
     }
   });
 
@@ -186,6 +205,12 @@ describe("translation completeness", () => {
   it("all keys in en.ts exist in fr.ts", () => {
     for (const key of enKeys) {
       expect(fr).toHaveProperty(key);
+    }
+  });
+
+  it("all keys in en.ts exist in es.ts", () => {
+    for (const key of enKeys) {
+      expect(es).toHaveProperty(key);
     }
   });
 
