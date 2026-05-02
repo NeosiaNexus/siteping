@@ -261,6 +261,8 @@ export function buildStyles(colors: ThemeColors): string {
       background: var(--sp-glass-bg-heavy);
       backdrop-filter: blur(var(--sp-blur));
       -webkit-backdrop-filter: blur(var(--sp-blur));
+      position: relative;
+      z-index: 2;
     }
 
     .sp-panel-title {
