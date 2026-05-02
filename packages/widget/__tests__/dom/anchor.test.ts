@@ -247,7 +247,7 @@ describe("findAnchorElement", () => {
     expect(result).toBe(outer);
   });
 
-  it("returns the element itself when walk reaches body without match", () => {
+  it("falls back to document.body when no ancestor contains the rect", () => {
     const child = document.createElement("span");
     document.body.appendChild(child);
 
@@ -258,8 +258,10 @@ describe("findAnchorElement", () => {
 
     const rect = makeDOMRect(50, 50, 100, 100);
     const result = findAnchorElement(rect);
-    // candidate never updated because no element (before body) contained rect
-    expect(result).toBe(child);
+    // Returning a too-small anchor would produce out-of-range percentages
+    // (xPct < 0 / wPct > 1) and be rejected by the API schema. Body is the
+    // safe fallback because it contains every drawable rect.
+    expect(result).toBe(document.body);
   });
 
   it("uses custom root parameter for comparison", () => {
