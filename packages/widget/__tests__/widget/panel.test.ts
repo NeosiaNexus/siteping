@@ -133,17 +133,24 @@ describe("Panel", () => {
       expect(list!.getAttribute("aria-label")).toBe(t("panel.feedbackList"));
     });
 
-    it("creates filter chips with correct aria-pressed", () => {
-      const chips = shadow.querySelectorAll<HTMLButtonElement>(".sp-chip");
-      expect(chips.length).toBe(8); // type: all, question, change, bug, other + status: all, open, resolved
+    it("creates type dropdown with 'all' selected by default and status segmented with 3 segments", () => {
+      // Type filter is now a dropdown trigger
+      const typeBtn = shadow.querySelector<HTMLButtonElement>(".sp-filter-dropdown-btn")!;
+      expect(typeBtn).not.toBeNull();
+      expect(typeBtn.dataset.filter).toBe("all");
+      expect(typeBtn.getAttribute("aria-expanded")).toBe("false");
 
-      // "All" chip is active by default
-      const allChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="all"]')!;
-      expect(allChip.getAttribute("aria-pressed")).toBe("true");
+      // Status filter is a segmented radiogroup with 3 segments
+      const segmented = shadow.querySelector<HTMLElement>(".sp-segmented")!;
+      expect(segmented).not.toBeNull();
+      expect(segmented.getAttribute("role")).toBe("radiogroup");
+      const segments = segmented.querySelectorAll<HTMLButtonElement>(".sp-segmented__btn");
+      expect(segments.length).toBe(3);
 
-      // Other chips are not active
-      const bugChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="bug"]')!;
-      expect(bugChip.getAttribute("aria-pressed")).toBe("false");
+      const allSeg = segmented.querySelector<HTMLButtonElement>('[data-status-filter="all"]')!;
+      expect(allSeg.getAttribute("aria-checked")).toBe("true");
+      const openSeg = segmented.querySelector<HTMLButtonElement>('[data-status-filter="open"]')!;
+      expect(openSeg.getAttribute("aria-checked")).toBe("false");
     });
 
     it("creates close and delete-all buttons", () => {
@@ -252,49 +259,55 @@ describe("Panel", () => {
   // -------------------------------------------------------------------------
 
   describe("filters", () => {
-    it("toggles aria-pressed when a chip is clicked", async () => {
+    /** Open the type dropdown and click the option matching the given value. */
+    const selectType = (value: string) => {
+      const btn = shadow.querySelector<HTMLButtonElement>(".sp-filter-dropdown-btn")!;
+      btn.click();
+      const opt = shadow.querySelector<HTMLButtonElement>(`.sp-filter-dropdown-option[data-filter="${value}"]`)!;
+      opt.click();
+    };
+
+    it("updates trigger and aria-selected after picking a type", async () => {
       await panel.open();
 
-      const bugChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="bug"]')!;
-      bugChip.click();
+      selectType("bug");
 
-      expect(bugChip.getAttribute("aria-pressed")).toBe("true");
+      const btn = shadow.querySelector<HTMLButtonElement>(".sp-filter-dropdown-btn")!;
+      expect(btn.dataset.filter).toBe("bug");
+      expect(btn.classList.contains("sp-filter-dropdown-btn--filtered")).toBe(true);
     });
 
-    it("deactivates other chips when a new one is selected (single-select)", async () => {
+    it("re-opening the menu shows the active option as aria-selected", async () => {
       await panel.open();
 
-      const bugChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="bug"]')!;
-      bugChip.click();
+      selectType("bug");
+      const btn = shadow.querySelector<HTMLButtonElement>(".sp-filter-dropdown-btn")!;
+      btn.click();
 
-      const allChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="all"]')!;
-      expect(allChip.getAttribute("aria-pressed")).toBe("false");
+      const bugOption = shadow.querySelector<HTMLButtonElement>('.sp-filter-dropdown-option[data-filter="bug"]')!;
+      const allOption = shadow.querySelector<HTMLButtonElement>('.sp-filter-dropdown-option[data-filter="all"]')!;
+      expect(bugOption.getAttribute("aria-selected")).toBe("true");
+      expect(allOption.getAttribute("aria-selected")).toBe("false");
     });
 
-    it("calls loadFeedbacks with type filter when a chip is clicked", async () => {
+    it("calls loadFeedbacks with the picked type", async () => {
       await panel.open();
       apiClient.getFeedbacks.mockClear();
 
-      const bugChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="bug"]')!;
-      bugChip.click();
+      selectType("bug");
 
-      // loadFeedbacks is called asynchronously
       await vi.waitFor(() => {
         expect(apiClient.getFeedbacks).toHaveBeenCalledWith("test-project", expect.objectContaining({ type: "bug" }));
       });
     });
 
-    it("clicking 'all' chip removes type filter", async () => {
+    it("picking 'all' removes the type filter", async () => {
       await panel.open();
 
-      // First select a type filter
-      const bugChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="bug"]')!;
-      bugChip.click();
+      selectType("bug");
       apiClient.getFeedbacks.mockClear();
 
-      // Then click all
-      const allChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="all"]')!;
-      allChip.click();
+      selectType("all");
 
       await vi.waitFor(() => {
         expect(apiClient.getFeedbacks).toHaveBeenCalledWith(
@@ -302,6 +315,17 @@ describe("Panel", () => {
           expect.objectContaining({ page: 1, limit: 20 }),
         );
       });
+    });
+
+    it("status segmented switches active aria-checked when a segment is clicked", async () => {
+      await panel.open();
+
+      const openSeg = shadow.querySelector<HTMLButtonElement>('[data-status-filter="open"]')!;
+      openSeg.click();
+
+      expect(openSeg.getAttribute("aria-checked")).toBe("true");
+      const allSeg = shadow.querySelector<HTMLButtonElement>('[data-status-filter="all"]')!;
+      expect(allSeg.getAttribute("aria-checked")).toBe("false");
     });
   });
 
@@ -1058,15 +1082,18 @@ describe("Panel", () => {
       );
 
       // Trigger a reload (e.g., via filter click)
-      const bugChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="bug"]')!;
-      bugChip.click();
+      const typeBtn = shadow.querySelector<HTMLButtonElement>(".sp-filter-dropdown-btn")!;
+      typeBtn.click();
+      const bugOption = shadow.querySelector<HTMLButtonElement>('.sp-filter-dropdown-option[data-filter="bug"]')!;
+      bugOption.click();
 
       // Immediately trigger another reload which should abort the first
       const fb2 = makeFeedback({ id: "fb-2", message: "second" });
       apiClient.getFeedbacks.mockResolvedValue({ feedbacks: [fb2], total: 1 });
 
-      const allChip = shadow.querySelector<HTMLButtonElement>('.sp-chip[data-filter="all"]')!;
-      allChip.click();
+      typeBtn.click();
+      const allOption = shadow.querySelector<HTMLButtonElement>('.sp-filter-dropdown-option[data-filter="all"]')!;
+      allOption.click();
 
       // Now resolve the first (aborted) request — it should be ignored
       resolveSlowRequest({ feedbacks: [makeFeedback({ id: "fb-stale", message: "stale" })], total: 1 });

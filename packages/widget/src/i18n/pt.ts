@@ -32,10 +32,14 @@ export const pt: Translations = {
   "panel.statusResolved": "Resolvidos",
 
   // Feedback type labels
+  "type.label": "Tipo",
   "type.question": "Pergunta",
   "type.change": "Alteração",
   "type.bug": "Bug",
   "type.other": "Outro",
+
+  // Status segmented control label
+  "status.label": "Status",
 
   // FAB menu
   "fab.aria": "Siteping — Menu de feedback",

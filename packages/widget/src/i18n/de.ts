@@ -32,10 +32,14 @@ export const de: Translations = {
   "panel.statusResolved": "Erledigt",
 
   // Feedback type labels
+  "type.label": "Typ",
   "type.question": "Frage",
   "type.change": "Änderung",
   "type.bug": "Fehler",
   "type.other": "Sonstiges",
+
+  // Status segmented control label
+  "status.label": "Status",
 
   // FAB menu
   "fab.aria": "Siteping — Feedback-Menü",
