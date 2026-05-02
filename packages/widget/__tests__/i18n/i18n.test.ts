@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { de } from "../../src/i18n/de.js";
 import { en } from "../../src/i18n/en.js";
 import { fr } from "../../src/i18n/fr.js";
 import { createT, getTypeLabel } from "../../src/i18n/index.js";
@@ -30,6 +31,13 @@ describe("createT", () => {
     expect(t("popup.submit")).toBe("Отправить");
   });
 
+  it("returns German translations for 'de' and 'de-DE'", () => {
+    const t = createT("de-DE");
+    expect(t("panel.close")).toBe("Panel schließen");
+    expect(t("popup.submit")).toBe("Senden");
+    expect(t("type.question")).toBe("Frage");
+  });
+
   it("resolves language prefix from full locale tag (e.g. 'fr-FR')", () => {
     const t = createT("fr-FR");
     expect(t("panel.close")).toBe("Fermer le panneau");
@@ -41,7 +49,7 @@ describe("createT", () => {
   });
 
   it("falls back to English for unknown locale", () => {
-    const t = createT("de");
+    const t = createT("es");
     expect(t("panel.close")).toBe("Close panel");
   });
 
@@ -97,11 +105,16 @@ describe("getTypeLabel", () => {
 
 describe("translation completeness", () => {
   const enKeys = Object.keys(en).sort();
+  const deKeys = Object.keys(de).sort();
   const frKeys = Object.keys(fr).sort();
   const ruKeys = Object.keys(ru).sort();
 
   it("en.ts and fr.ts have the same set of keys", () => {
     expect(enKeys).toEqual(frKeys);
+  });
+
+  it("en.ts and de.ts have the same set of keys", () => {
+    expect(enKeys).toEqual(deKeys);
   });
 
   it("en.ts and ru.ts have the same set of keys", () => {
@@ -111,6 +124,12 @@ describe("translation completeness", () => {
   it("no translation value is an empty string in fr.ts", () => {
     for (const [key, value] of Object.entries(fr)) {
       expect(value, `fr.ts key "${key}" is empty`).not.toBe("");
+    }
+  });
+
+  it("no translation value is an empty string in de.ts", () => {
+    for (const [key, value] of Object.entries(de)) {
+      expect(value, `de.ts key "${key}" is empty`).not.toBe("");
     }
   });
 
@@ -135,6 +154,12 @@ describe("translation completeness", () => {
   it("all keys in fr.ts exist in en.ts", () => {
     for (const key of frKeys) {
       expect(en).toHaveProperty(key);
+    }
+  });
+
+  it("all keys in en.ts exist in de.ts", () => {
+    for (const key of enKeys) {
+      expect(de).toHaveProperty(key);
     }
   });
 
