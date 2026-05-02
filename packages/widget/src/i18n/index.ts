@@ -7,10 +7,11 @@ export type { TFunction, Translations } from "./types.js";
 import { de } from "./de.js";
 import { en } from "./en.js";
 import { fr } from "./fr.js";
+import { it } from "./it.js";
 import { pt } from "./pt.js";
 import { ru } from "./ru.js";
 
-const LOCALES: Record<string, Translations> = { de, en, fr, pt, ru };
+const LOCALES: Record<string, Translations> = { de, en, fr, it, pt, ru };
 
 /** Register a custom locale at runtime. */
 export function registerLocale(code: string, translations: Translations): void {
