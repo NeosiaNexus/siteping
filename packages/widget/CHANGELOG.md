@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.7](https://github.com/NeosiaNexus/SitePing/compare/widget-v0.9.6...widget-v0.9.7) (2026-05-03)
+
+
+### Tests
+
+* raise unit test coverage to 99%+ across all packages ([f2e9f9e](https://github.com/NeosiaNexus/SitePing/commit/f2e9f9e406a6f0a3971b9df864af4e96d742304a))
+
 ## [0.9.6](https://github.com/NeosiaNexus/SitePing/compare/widget-v0.9.5...widget-v0.9.6) (2026-05-02)
 
 
