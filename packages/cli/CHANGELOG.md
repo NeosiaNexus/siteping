@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/NeosiaNexus/SitePing/compare/cli-v0.4.3...cli-v0.4.4) (2026-05-03)
+
+
+### Tests
+
+* raise unit test coverage to 99%+ across all packages ([f2e9f9e](https://github.com/NeosiaNexus/SitePing/commit/f2e9f9e406a6f0a3971b9df864af4e96d742304a))
+
 ## [0.4.3](https://github.com/NeosiaNexus/SitePing/compare/cli-v0.4.2...cli-v0.4.3) (2026-04-04)
 
 
