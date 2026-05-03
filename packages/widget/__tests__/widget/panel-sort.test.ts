@@ -72,6 +72,16 @@ describe("panel sort utilities", () => {
     ]);
   });
 
+  it("sort 'by-type' falls back to 99 priority for unknown types and breaks ties by date", () => {
+    const feedbacks = [
+      makeFeedback({ id: "weird", type: "unknown" as never, createdAt: "2026-04-05T00:00:00.000Z" }),
+      makeFeedback({ id: "older-weird", type: "unknown" as never, createdAt: "2026-04-01T00:00:00.000Z" }),
+      makeFeedback({ id: "question", type: "question", createdAt: "2026-04-02T00:00:00.000Z" }),
+    ];
+
+    expect(sortFeedbacks(feedbacks, "by-type").map((fb) => fb.id)).toEqual(["question", "weird", "older-weird"]);
+  });
+
   it("groups feedback by URL pathname, preserves group item order, and sorts groups by count", () => {
     const feedbacks = [
       makeFeedback({ id: "settings-1", url: "https://example.com/settings?tab=team" }),
@@ -128,6 +138,77 @@ describe("PanelSortControls", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
+  it("destroy without an open menu is a no-op (closeMenu handles null menuEl)", () => {
+    const controls = new PanelSortControls(buildThemeColors(), vi.fn());
+    document.body.appendChild(controls.element);
+
+    // No menu has been opened — destroy should still set aria-expanded=false safely
+    controls.destroy();
+
+    const sortButton = controls.element.querySelector<HTMLButtonElement>(".sp-sort-btn")!;
+    expect(sortButton.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("ignores non-Escape keys inside the open sort menu", () => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+    const controls = new PanelSortControls(buildThemeColors(), vi.fn());
+    document.body.appendChild(controls.element);
+
+    const sortButton = controls.element.querySelector<HTMLButtonElement>(".sp-sort-btn")!;
+    sortButton.click();
+
+    const menu = controls.element.querySelector<HTMLElement>(".sp-sort-menu")!;
+    menu.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+
+    expect(controls.element.querySelector(".sp-sort-menu")).not.toBeNull();
+  });
+
+  it("updateSortLabel safely handles a missing .sp-sort-btn-label child", () => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+    const onChange = vi.fn();
+    const controls = new PanelSortControls(buildThemeColors(), onChange);
+    document.body.appendChild(controls.element);
+
+    const sortButton = controls.element.querySelector<HTMLButtonElement>(".sp-sort-btn")!;
+    // Remove the label span so updateSortLabel hits the `if (label)` false branch
+    sortButton.querySelector(".sp-sort-btn-label")?.remove();
+
+    sortButton.click();
+    controls.element.querySelectorAll<HTMLButtonElement>('[role="option"]')[2].click();
+
+    expect(controls.sortMode).toBe("by-type");
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
+  it("clicking the sort button twice toggles the menu open then closed", () => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+    const onChange = vi.fn();
+    const controls = new PanelSortControls(buildThemeColors(), onChange);
+    document.body.appendChild(controls.element);
+
+    const sortButton = controls.element.querySelector<HTMLButtonElement>(".sp-sort-btn")!;
+
+    // First click opens the menu
+    sortButton.click();
+    expect(controls.element.querySelector(".sp-sort-menu")).not.toBeNull();
+    expect(sortButton.getAttribute("aria-expanded")).toBe("true");
+
+    // Second click on the sort button should close the menu via toggleMenu->closeMenu
+    sortButton.click();
+    expect(controls.element.querySelector(".sp-sort-menu")).toBeNull();
+    expect(sortButton.getAttribute("aria-expanded")).toBe("false");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("closes the menu on outside click, Escape, and destroy", () => {
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback) => {
       cb(0);
@@ -160,6 +241,54 @@ describe("PanelSortControls", () => {
 describe("createPageGroupHeader", () => {
   beforeEach(() => {
     document.body.replaceChildren();
+  });
+
+  it("renders a short path verbatim (no truncation, no title attribute)", () => {
+    const header = createPageGroupHeader("/short", 2, buildThemeColors());
+    document.body.appendChild(header);
+
+    const path = header.querySelector<HTMLElement>(".sp-group-header-path")!;
+    expect(path.textContent).toBe("/short");
+    expect(path.title).toBe("");
+  });
+
+  it("toggling a header without a sp-group-content sibling still flips its own state", () => {
+    const header = createPageGroupHeader("/page", 1, buildThemeColors());
+    // Sibling is something other than sp-group-content
+    const sibling = document.createElement("div");
+    sibling.className = "sp-other";
+    document.body.append(header, sibling);
+
+    expect(header.getAttribute("aria-expanded")).toBe("true");
+
+    header.click();
+
+    expect(header.getAttribute("aria-expanded")).toBe("false");
+    expect(header.classList.contains("sp-group-header--collapsed")).toBe(true);
+    expect(sibling.classList.contains("sp-group-content--collapsed")).toBe(false);
+  });
+
+  it("ignores keys that are not Enter or Space on the header", () => {
+    const header = createPageGroupHeader("/page", 1, buildThemeColors());
+    const content = document.createElement("div");
+    content.className = "sp-group-content";
+    document.body.append(header, content);
+
+    header.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+
+    expect(header.getAttribute("aria-expanded")).toBe("true");
+    expect(content.classList.contains("sp-group-content--collapsed")).toBe(false);
+  });
+
+  it("supports Space as a toggle key", () => {
+    const header = createPageGroupHeader("/page", 1, buildThemeColors());
+    const content = document.createElement("div");
+    content.className = "sp-group-content";
+    document.body.append(header, content);
+
+    header.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+
+    expect(header.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("renders a collapsible accessible header with truncated title", () => {

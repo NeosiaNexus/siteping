@@ -175,4 +175,118 @@ describe("BulkActions", () => {
 
     expect(bulk.barElement.isConnected).toBe(false);
   });
+
+  it("ignores non Enter/Space keydown on a checkbox", () => {
+    const { bulk, list } = createBulkActions();
+    const checkbox = list.querySelector<HTMLElement>('[data-feedback-id="fb-1"] .sp-bulk-checkbox')!;
+
+    checkbox.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+
+    expect(bulk.selectedIds).toEqual([]);
+  });
+
+  it("does nothing when toggling while processing", async () => {
+    let resolveOnDelete: (() => void) | null = null;
+    const onResolve = vi.fn().mockResolvedValue(undefined);
+    const onDelete = vi.fn().mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveOnDelete = resolve;
+        }),
+    );
+    const bulk = new BulkActions(buildThemeColors(), { onResolve, onDelete });
+    const list = document.createElement("div");
+    const card = document.createElement("article");
+    card.dataset.feedbackId = "fb-1";
+    card.appendChild(bulk.createCheckbox("fb-1"));
+    list.appendChild(card);
+    bulk.setListContainer(list);
+    document.body.append(list, bulk.barElement);
+
+    bulk.selectAll(["fb-1"]);
+    bulk.barElement.querySelector<HTMLButtonElement>(".sp-bulk-btn-delete")!.click();
+
+    // While the delete is in-flight, toggle/selectAll/handleResolve/handleDelete are no-ops
+    bulk.toggle("fb-1");
+    bulk.selectAll(["fb-1"]);
+    bulk.barElement.querySelector<HTMLButtonElement>(".sp-bulk-btn-resolve")!.click();
+    bulk.barElement.querySelector<HTMLButtonElement>(".sp-bulk-btn-delete")!.click();
+
+    expect(bulk.selectedIds).toEqual(["fb-1"]);
+    expect(onResolve).not.toHaveBeenCalled();
+    expect(onDelete).toHaveBeenCalledTimes(1);
+
+    // Allow the in-flight delete to finish
+    resolveOnDelete?.();
+    await vi.waitFor(() => expect(bulk.selectedIds).toEqual([]));
+  });
+
+  it("handleResolve does nothing when there is no selection", async () => {
+    const { bulk, onResolve } = createBulkActions();
+
+    bulk.barElement.querySelector<HTMLButtonElement>(".sp-bulk-btn-resolve")!.click();
+
+    // Wait a tick — onResolve should still not have been called
+    await Promise.resolve();
+    expect(onResolve).not.toHaveBeenCalled();
+  });
+
+  it("handleDelete does nothing when there is no selection", async () => {
+    const { bulk, onDelete } = createBulkActions();
+
+    bulk.barElement.querySelector<HTMLButtonElement>(".sp-bulk-btn-delete")!.click();
+
+    await Promise.resolve();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("toggling an unknown id (not in checkboxMap) is a safe no-op visually", () => {
+    const { bulk } = createBulkActions();
+
+    // Toggle an id that has no checkbox registered. It still tracks selection,
+    // but updateCheckbox should bail out via the early return.
+    bulk.toggle("unknown-id");
+
+    expect(bulk.selectedIds).toEqual(["unknown-id"]);
+    expect(bulk.barElement.classList.contains("sp-bulk-bar--visible")).toBe(true);
+  });
+
+  it("toggling an id without a card in the list still updates selection state", () => {
+    const onResolve = vi.fn().mockResolvedValue(undefined);
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const bulk = new BulkActions(buildThemeColors(), { onResolve, onDelete });
+    const list = document.createElement("div");
+    bulk.setListContainer(list);
+    document.body.append(list, bulk.barElement);
+    // Register a checkbox without appending it to a card with data-feedback-id
+    const checkbox = bulk.createCheckbox("fb-orphan");
+    document.body.appendChild(checkbox);
+
+    checkbox.click();
+
+    expect(bulk.selectedIds).toEqual(["fb-orphan"]);
+    expect(list.querySelectorAll(".sp-card--selected").length).toBe(0);
+  });
+
+  it("exposes count and hasSelection getters reflecting selection state", () => {
+    const { bulk } = createBulkActions();
+
+    expect(bulk.count).toBe(0);
+    expect(bulk.hasSelection).toBe(false);
+
+    bulk.toggle("fb-1");
+
+    expect(bulk.count).toBe(1);
+    expect(bulk.hasSelection).toBe(true);
+
+    bulk.selectAll(["fb-1", "fb-2", "fb-3"]);
+
+    expect(bulk.count).toBe(3);
+    expect(bulk.hasSelection).toBe(true);
+
+    bulk.deselectAll();
+
+    expect(bulk.count).toBe(0);
+    expect(bulk.hasSelection).toBe(false);
+  });
 });

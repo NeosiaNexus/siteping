@@ -211,4 +211,56 @@ describe("ExportButton", () => {
     expect(URL.createObjectURL).not.toHaveBeenCalled();
     expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
   });
+
+  it("falls back to 'feedbacks' filename when projectName is missing", () => {
+    // FeedbackResponse without projectName → fallback to 'feedbacks'
+    const fb = makeFeedback();
+    delete (fb as Partial<FeedbackResponse>).projectName;
+
+    const button = new ExportButton(buildThemeColors(), () => [fb]);
+    document.body.appendChild(button.element);
+
+    const trigger = button.element.querySelector<HTMLButtonElement>(".sp-export-btn")!;
+    trigger.click();
+    button.element.querySelectorAll<HTMLButtonElement>(".sp-export-option")[0].click();
+
+    // Verify createObjectURL was called (download flow ran with fallback name)
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+  });
+
+  it("setLabels is a no-op when the export button element is missing from the DOM tree", () => {
+    const button = new ExportButton(buildThemeColors(), () => [makeFeedback()]);
+    document.body.appendChild(button.element);
+
+    // Remove the trigger button
+    const triggerBtn = button.element.querySelector<HTMLButtonElement>(".sp-export-btn");
+    triggerBtn?.remove();
+
+    // Should not throw — both branches (btn missing, options[0]/options[1] still present) handled
+    expect(() => button.setLabels(EXPORT_I18N_FR)).not.toThrow();
+  });
+
+  it("setLabels handles the case where the trigger button has no span child", () => {
+    const button = new ExportButton(buildThemeColors(), () => [makeFeedback()]);
+    document.body.appendChild(button.element);
+
+    // Remove only the span inside the trigger button
+    const triggerBtn = button.element.querySelector<HTMLButtonElement>(".sp-export-btn");
+    triggerBtn?.querySelector("span")?.remove();
+
+    expect(() => button.setLabels(EXPORT_I18N_FR)).not.toThrow();
+  });
+
+  it("setLabels handles the case where option labels are missing", () => {
+    const button = new ExportButton(buildThemeColors(), () => [makeFeedback()]);
+    document.body.appendChild(button.element);
+
+    // Remove the option labels
+    for (const node of button.element.querySelectorAll(".sp-export-option-label")) {
+      node.remove();
+    }
+
+    expect(() => button.setLabels(EXPORT_I18N_FR)).not.toThrow();
+  });
 });
