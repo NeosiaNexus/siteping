@@ -42,9 +42,36 @@ export const { GET, POST, PATCH, DELETE, OPTIONS } = createSitepingHandler({ pri
 | `projectName` | `string` | **Required.** Filter by project |
 | `type` | `string` | `question` \| `change` \| `bug` \| `other` |
 | `status` | `string` | `open` \| `resolved` |
-| `search` | `string` | Full-text search on message content |
+| `search` | `string` | Substring match on message content (see [Search and case sensitivity](#search-and-case-sensitivity)) |
 | `page` | `number` | Pagination (default: 1) |
 | `limit` | `number` | Items per page (default: 50, max: 100) |
+
+### Search and case sensitivity
+
+The `?search=` filter is built with Prisma's `contains` operator. Whether it
+matches case-insensitively depends on the database provider:
+
+| Provider | Default `caseInsensitiveSearch` | Behaviour |
+|----------|---------------------------------|-----------|
+| `postgresql`, `mysql`, `cockroachdb` | `true` (auto) | Emits `mode: "insensitive"` — case-insensitive across all letters, including non-ASCII. |
+| `sqlite`, `sqlserver`, `mongodb` | `false` (auto) | No `mode` field — uses each database's default `LIKE` semantics. SQLite is ASCII-case-insensitive by default; SQL Server depends on column collation. |
+| Unknown / undetectable | `true` (auto) | Preserves historical Postgres-style behaviour. |
+
+Auto-detection reads the active provider from the Prisma client at runtime.
+Override it explicitly when the default is wrong for your setup:
+
+```ts
+export const { GET, POST, PATCH, DELETE, OPTIONS } = createSitepingHandler({
+  prisma,
+  caseInsensitiveSearch: false, // force ASCII-only match (e.g. SQL Server with case-sensitive collation)
+})
+```
+
+Or when constructing `PrismaStore` directly:
+
+```ts
+const store = new PrismaStore(prisma, { caseInsensitiveSearch: false })
+```
 
 ## Validation Constraints
 
