@@ -9,6 +9,7 @@ export type {
   FeedbackResponse,
   FeedbackStatus,
   FeedbackType,
+  PageScope,
   RectData,
   SitepingConfig,
   SitepingInstance,
