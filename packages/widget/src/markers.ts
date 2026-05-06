@@ -219,6 +219,14 @@ export class MarkerManager {
     }
 
     this.applyClusterPositions();
+
+    // Re-render the pinned highlight rectangle so it tracks the layout after
+    // resize / SPA mutation. Marker dots reposition above; without this,
+    // the highlight rect keeps its old pixel position and visibly drifts
+    // away from the underlying content.
+    if (this.pinnedFeedback) {
+      this.showHighlight(this.pinnedFeedback);
+    }
   }
 
   private applyClusterPositions(): void {
