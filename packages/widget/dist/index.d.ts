@@ -1,5 +1,5 @@
 import { SitepingConfig, SitepingInstance } from './siteping-core.js';
-export { AnchorData, AnnotationPayload, AnnotationResponse, FeedbackPayload, FeedbackResponse, FeedbackStatus, FeedbackType, RectData, SitepingConfig, SitepingInstance, SitepingPublicEvents, SitepingStore } from './siteping-core.js';
+export { AnchorData, AnnotationPayload, AnnotationResponse, FeedbackPayload, FeedbackResponse, FeedbackStatus, FeedbackType, PageScope, RectData, SitepingConfig, SitepingInstance, SitepingPublicEvents, SitepingStore } from './siteping-core.js';
 
 interface Identity {
     name: string;
