@@ -48,12 +48,17 @@ vi.mock(new URL("../../src/annotator.js", import.meta.url).pathname, () => ({
   ),
 }));
 
+// Module-level marker spies so individual tests can assert against the same
+// instance that launch() created. Reset by `vi.clearAllMocks` in afterEach.
+const mockMarkersAddFeedback = vi.fn();
+const mockMarkersRender = vi.fn();
+
 vi.mock(new URL("../../src/markers.js", import.meta.url).pathname, () => ({
   MarkerManager: vi.fn().mockImplementation(() => ({
-    render: vi.fn(),
+    render: mockMarkersRender,
     highlight: vi.fn(),
     pinHighlight: vi.fn(),
-    addFeedback: vi.fn(),
+    addFeedback: mockMarkersAddFeedback,
     destroy: vi.fn(),
     count: 0,
   })),
@@ -717,12 +722,12 @@ describe("launcher — annotation:complete integration", () => {
   // -------------------------------------------------------------------------
 
   describe("URL identifier (scope-driven)", () => {
-    it("annotation:complete uses scope.url (default = window.location.pathname) — query string is dropped, sensitive params can never leak", async () => {
+    it("annotation:complete uses scope.url (pathname by default — query string never leaks)", async () => {
       const response = makeFeedbackResponse();
       mockSendFeedback.mockResolvedValue(response);
 
-      // Sensitive params would have leaked under the old sanitization
-      // approach. The new contract is "scope identifier", not "current URL":
+      // Sensitive params would have leaked under the old "sanitize full URL"
+      // approach. The contract is now "scope identifier, not current URL":
       // default scope returns `pathname`, so query strings are absent by
       // construction.
       const sensitiveUrl = "http://localhost/orders/123?token=abc&key=def&secret=ghi&auth=jkl&page=1";
@@ -772,6 +777,105 @@ describe("launcher — annotation:complete integration", () => {
       const payload = mockSendFeedback.mock.calls[0][0];
       expect(payload.url).toBe("/custom/scope/key");
       expect(payload.urlPattern).toBe("/custom/:id");
+
+      instance.destroy();
+    });
+
+    it("falls back to pathname when getPageScope() throws", async () => {
+      const response = makeFeedbackResponse();
+      mockSendFeedback.mockResolvedValue(response);
+
+      Object.defineProperty(window, "location", {
+        value: new URL("http://localhost/fallback/path"),
+        writable: true,
+        configurable: true,
+      });
+
+      const instance = launch({
+        ...defaultConfig(),
+        getPageScope: () => {
+          throw new Error("boom");
+        },
+      });
+      expect(capturedBus).not.toBeNull();
+
+      capturedBus!.emit("annotation:complete", makeAnnotationCompleteData());
+
+      await vi.waitFor(() => {
+        expect(mockSendFeedback).toHaveBeenCalledOnce();
+      });
+
+      const payload = mockSendFeedback.mock.calls[0][0];
+      expect(payload.url).toBe("/fallback/path");
+      expect(payload.urlPattern).toBeNull();
+
+      instance.destroy();
+    });
+
+    it("does NOT add a marker when the response.url falls outside the current scope", async () => {
+      // The server may persist a feedback the widget submitted, but the
+      // panel.refresh() that follows could resolve to a different page (race
+      // with SPA navigation). The launcher compares response.url to scope.url
+      // and skips out-of-scope feedbacks so the user doesn't see a phantom
+      // marker for content they're no longer on.
+      const response = makeFeedbackResponse({ url: "/some-other-page" });
+      mockSendFeedback.mockResolvedValue(response);
+
+      const instance = launch({
+        ...defaultConfig(),
+        getPageScope: () => ({ url: "/current-page", urlPattern: null }),
+      });
+      expect(capturedBus).not.toBeNull();
+
+      capturedBus!.emit("annotation:complete", makeAnnotationCompleteData());
+
+      await vi.waitFor(() => {
+        expect(mockSendFeedback).toHaveBeenCalledOnce();
+      });
+
+      expect(mockMarkersAddFeedback).not.toHaveBeenCalled();
+
+      instance.destroy();
+    });
+
+    it("DOES add the marker when response.url matches scope.url", async () => {
+      // Inverse of the previous case — when the feedback's URL matches the
+      // current scope (or when scopeAnnotationsByUrl is off), the marker is
+      // added immediately so the user sees their submission land.
+      const response = makeFeedbackResponse({ url: "/current-page" });
+      mockSendFeedback.mockResolvedValue(response);
+
+      const instance = launch({
+        ...defaultConfig(),
+        getPageScope: () => ({ url: "/current-page", urlPattern: null }),
+      });
+
+      capturedBus!.emit("annotation:complete", makeAnnotationCompleteData());
+
+      await vi.waitFor(() => {
+        expect(mockMarkersAddFeedback).toHaveBeenCalledOnce();
+      });
+
+      instance.destroy();
+    });
+
+    it("DOES add the marker regardless of url when scopeAnnotationsByUrl is disabled", async () => {
+      // Legacy project-wide mode: the user opts out of scope filtering, so
+      // every feedback's marker is added on submit even if the URLs differ.
+      const response = makeFeedbackResponse({ url: "/some-other-page" });
+      mockSendFeedback.mockResolvedValue(response);
+
+      const instance = launch({
+        ...defaultConfig(),
+        scopeAnnotationsByUrl: false,
+        getPageScope: () => ({ url: "/current-page", urlPattern: null }),
+      });
+
+      capturedBus!.emit("annotation:complete", makeAnnotationCompleteData());
+
+      await vi.waitFor(() => {
+        expect(mockMarkersAddFeedback).toHaveBeenCalledOnce();
+      });
 
       instance.destroy();
     });

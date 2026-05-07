@@ -435,22 +435,41 @@ This migration is safe for all supported databases (PostgreSQL, MySQL, SQLite): 
 
 ## Roadmap
 
-- [ ] Drizzle adapter
-- [ ] Dashboard UI for reviewing feedbacks
-- [ ] MutationObserver for SPA re-anchoring
-- [ ] Webhook notifications (Discord, Slack)
-- [ ] Screenshot fallback when re-anchoring fails
-- [x] Multi-language support (i18n)
-- [x] Client-side store mode (no server needed)
-- [x] In-memory + localStorage adapters
-- [x] Adapter conformance test suite
-- [ ] Nuxt / Astro / SvelteKit support
+**Recently shipped**
+
+- ✅ Multi-language support — 7 built-in locales (`en`, `fr`, `de`, `es`, `it`, `pt`, `ru`)
+- ✅ Client-side store mode (no server needed)
+- ✅ In-memory + localStorage adapters
+- ✅ Adapter conformance test suite (22 tests, shared across adapters)
+
+**Up next**
+
+- 🚧 Drizzle adapter — [help wanted](https://github.com/NeosiaNexus/SitePing/labels/help%20wanted)
+- 🚧 Framework example apps (Astro, SvelteKit, Nuxt) — [good first issues](https://github.com/NeosiaNexus/SitePing/labels/good%20first%20issue)
+- 🚧 MutationObserver for SPA re-anchoring
+- 🚧 Webhook notifications (Discord, Slack)
+
+**Planned**
+
+- 📋 Dashboard UI for reviewing feedbacks
+- 📋 Screenshot fallback when re-anchoring fails
+
+> Want to help ship these? Browse [`good first issue`](https://github.com/NeosiaNexus/SitePing/labels/good%20first%20issue) and [`help wanted`](https://github.com/NeosiaNexus/SitePing/labels/help%20wanted).
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please read the [contributing guide](./CONTRIBUTING.md) first, and open an issue to discuss what you'd like to change.
+Contributions are welcome — first-time contributors especially.
+
+**Where to start**
+
+- 🌱 [`good first issue`](https://github.com/NeosiaNexus/SitePing/labels/good%20first%20issue) — small, well-scoped tasks (locales, examples, docs, CLI flags)
+- 🎯 [`help wanted`](https://github.com/NeosiaNexus/SitePing/labels/help%20wanted) — meatier features (new adapters, dashboard)
+- 📖 [Contributing guide](./CONTRIBUTING.md) — local setup, architecture, release flow
+- 🌍 Adding a new locale takes three small steps — see [Adding a Locale](./CONTRIBUTING.md#adding-a-locale)
+
+**Quick setup**
 
 ```bash
 git clone https://github.com/NeosiaNexus/SitePing.git
@@ -460,6 +479,26 @@ bun run build      # Build all packages
 bun run test       # Tests in watch mode
 bun run test:e2e   # E2E tests
 ```
+
+---
+
+## Acknowledgements
+
+A big thank you to the [Trade-su/SitePing](https://github.com/Trade-su/SitePing) fork — Valerii ([@Trade-su](https://github.com/Trade-su)) and grizodubov ([@grizodubov](https://github.com/grizodubov)) — for the work that inspired several upstream features. Forks that ship real ideas back are the best kind.
+
+Specifically:
+
+- **Page-scoped annotations + semantic anchors** (`data-feedback-anchor`) — solves the cross-page leak when CSS selectors accidentally match unrelated elements.
+- **Screenshot capture** via `html2canvas` — adapted upstream with a pluggable `ScreenshotStorage` so production users can offload to S3/R2 instead of bloating Postgres.
+- **Popup positioning fix** — clamps inside the viewport when the drawn rect leaves no room above or below.
+
+If you maintain a fork that adds features, opening an upstream PR or even just an issue describing what you've built is incredibly valuable — it lets the community benefit beyond your fork's user base.
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=NeosiaNexus/SitePing&type=Date)](https://star-history.com/#NeosiaNexus/SitePing&Date)
 
 ---
 

@@ -202,7 +202,7 @@ export function launch(config: SitepingConfig): SitepingInstance {
     getScope,
     scopeAnnotationsByUrl,
   });
-  const annotator = new Annotator(colors, bus, t);
+  const annotator = new Annotator(colors, bus, t, config.enableScreenshot ?? false);
 
   // Handle annotation completion via event bus (not DOM events)
   // Concurrency guard: prevent duplicate submissions if user draws two annotations quickly
@@ -231,13 +231,12 @@ export function launch(config: SitepingConfig): SitepingInstance {
       })();
 
       // Use scope.url as the single source of truth — same identifier the
-      // panel filter and marker filter use, otherwise the freshly created
-      // feedback wouldn't match its own filter and would vanish from the UI
-      // immediately after submission.
+      // panel filter and marker filter use. If we stored full URLs here while
+      // filtering by pathname, freshly-created feedbacks would never match
+      // their own scope filter and would vanish from the UI immediately.
       // Default scope.url is `window.location.pathname` (no query string,
-      // so token/key/secret query params are not leaked). Hosts that need
-      // origin or query for their identifier can include them in
-      // `getPageScope()`.
+      // so token/key/secret query params can't leak by construction). Hosts
+      // that need origin or query in the identifier override `getPageScope`.
       const scope = getScope();
       const payload: FeedbackPayload = {
         projectName: config.projectName,
@@ -257,10 +256,9 @@ export function launch(config: SitepingConfig): SitepingInstance {
       try {
         const response = await client.sendFeedback(payload);
         bus.emit("feedback:sent", response);
-        // Only show the marker for the current scope; out-of-scope feedbacks
-        // are still saved but don't render a marker on this page. Compare
-        // against the scope captured before the submit (route may have
-        // changed during the await — re-reading scope here would race).
+        // Compare against the scope captured before submit (route may have
+        // changed during the network round-trip — re-reading scope here
+        // would race with SPA navigation).
         if (!scopeAnnotationsByUrl || response.url === scope.url) {
           markers.addFeedback(response, markers.count + 1);
         }
@@ -284,7 +282,7 @@ export function launch(config: SitepingConfig): SitepingInstance {
   client
     .getFeedbacks(config.projectName, initialOptions)
     .then(({ feedbacks }: { feedbacks: FeedbackResponse[] }) => {
-      // Defensive client-side filter — backend may not yet support `url` query.
+      // Defensive client-side filter — backend may not yet support the `url` query.
       const visible = scopeAnnotationsByUrl ? feedbacks.filter((f) => f.url === initialScope.url) : feedbacks;
       markers.render(visible);
     })
@@ -321,8 +319,17 @@ export function launch(config: SitepingConfig): SitepingInstance {
       panel.close();
     },
     refresh: () => {
-      // Also reload markers — important for SPA hosts that call refresh() on
-      // route change so annotations re-scope to the new pathname.
+      // When the panel is open, its `refresh()` already runs `loadFeedbacks()`
+      // which renders markers. Doing a second fetch here would race with that
+      // one — the loser overwrites the winner's markers, off by a generation.
+      // So: when the panel is open, delegate. When it's closed, fetch markers
+      // ourselves (the panel won't, but SPA hosts still need the new page's
+      // markers after a route change).
+      if (panel.isCurrentlyOpen) {
+        panel.refresh();
+        return;
+      }
+
       const scope = getScope();
       const opts = scopeAnnotationsByUrl ? { limit: PAGE_SIZE, url: scope.url } : { limit: PAGE_SIZE };
       client
@@ -332,7 +339,6 @@ export function launch(config: SitepingConfig): SitepingInstance {
           markers.render(visible);
         })
         .catch(() => {});
-      panel.refresh();
     },
     on: <K extends keyof SitepingPublicEvents>(event: K, listener: (...args: SitepingPublicEvents[K]) => void) => {
       // Safe cast: SitepingPublicEvents and PublicWidgetEvents have identical keys and value types

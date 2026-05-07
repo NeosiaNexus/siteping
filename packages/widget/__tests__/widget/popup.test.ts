@@ -144,8 +144,19 @@ describe("Popup", () => {
       popup.show(makeBounds({ top: 500, bottom: 600 }));
 
       const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
-      // Should flip up: top = rectTop - popupH - 8 = 500 - 260 - 8 = 232
-      expect(dialog.style.top).toBe("232px");
+      // Should flip up: top = rectTop - popupH - 8 = 500 - 220 - 8 = 272
+      expect(dialog.style.top).toBe("272px");
+    });
+
+    it("clamps to viewport bottom when rect is too tall to fit popup above or below", () => {
+      // Tall rect that spans most of the viewport (jsdom default 1024x768)
+      // — neither below (rect.bottom + 8 + 220 > 768) nor above
+      // (rect.top - 220 - 8 < 8) leaves room.
+      popup.show(makeBounds({ top: 50, bottom: 750 }));
+
+      const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      // top = innerHeight - popupH - 8 = 768 - 220 - 8 = 540
+      expect(dialog.style.top).toBe("540px");
     });
 
     it("resolves to null when cancelled (via cancel button)", async () => {

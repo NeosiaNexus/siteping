@@ -62,6 +62,15 @@ export declare const SITEPING_MODELS: Readonly<{
             readonly url: {
                 readonly type: "String";
             };
+            readonly urlPattern: {
+                readonly type: "String";
+                readonly optional: true;
+            };
+            readonly screenshotUrl: {
+                readonly type: "String";
+                readonly optional: true;
+                readonly nativeType: "Text";
+            };
             readonly viewport: {
                 readonly type: "String";
             };
@@ -102,6 +111,8 @@ export declare const SITEPING_MODELS: Readonly<{
             readonly fields: ["projectName"];
         }, {
             readonly fields: ["projectName", "status", "createdAt"];
+        }, {
+            readonly fields: ["projectName", "url"];
         }];
     };
     readonly SitepingAnnotation: {
@@ -157,6 +168,10 @@ export declare const SITEPING_MODELS: Readonly<{
             readonly neighborText: {
                 readonly type: "String";
                 readonly nativeType: "Text";
+            };
+            readonly anchorKey: {
+                readonly type: "String";
+                readonly optional: true;
             };
             readonly xPct: {
                 readonly type: "Float";

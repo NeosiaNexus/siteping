@@ -98,6 +98,7 @@ function toResponse(record: FeedbackRecord): FeedbackResponse {
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
     annotations: record.annotations.map(toAnnotationResponse),
+    screenshotUrl: record.screenshotUrl ?? null,
   };
 }
 

@@ -4,23 +4,24 @@ import { afterEach, describe, expect, it } from "vitest";
 import { generateAnchor } from "../../src/dom/anchor.js";
 import { resolveAnchor } from "../../src/dom/resolver.js";
 
-// ---------------------------------------------------------------------------
-// Polyfills — jsdom lacks CSS.escape
-// ---------------------------------------------------------------------------
-
+// jsdom lacks CSS.escape in older versions
 if (typeof CSS === "undefined") {
   (globalThis as Record<string, unknown>).CSS = { escape: (s: string) => s };
 } else if (!CSS.escape) {
   CSS.escape = (s: string) => s;
 }
 
+function clearBody(): void {
+  while (document.body.firstChild) document.body.removeChild(document.body.firstChild);
+}
+
 // ---------------------------------------------------------------------------
-// Tests for the semantic anchor (data-feedback-anchor) extension
+// generateAnchor — captures data-feedback-anchor from the element or ancestors
 // ---------------------------------------------------------------------------
 
 describe("generateAnchor — data-feedback-anchor", () => {
   afterEach(() => {
-    document.body.innerHTML = "";
+    clearBody();
   });
 
   it("captures anchorKey from the closest ancestor", () => {
@@ -73,12 +74,16 @@ describe("generateAnchor — data-feedback-anchor", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// resolveAnchor — semantic anchor at priority 0
+// ---------------------------------------------------------------------------
+
 describe("resolveAnchor — anchorKey strategy", () => {
   afterEach(() => {
-    document.body.innerHTML = "";
+    clearBody();
   });
 
-  it("resolves via anchorKey at confidence 1.0 — strategy 'anchorKey'", () => {
+  it("resolves via anchorKey at confidence 1.0", () => {
     const section = document.createElement("section");
     section.setAttribute("data-feedback-anchor", "order-card.services");
     section.textContent = "Services panel";
@@ -97,13 +102,12 @@ describe("resolveAnchor — anchorKey strategy", () => {
     });
 
     expect(resolution).not.toBeNull();
-    expect(resolution!.strategy).toBe("anchorKey");
-    expect(resolution!.confidence).toBe(1.0);
-    expect(resolution!.element).toBe(section);
+    expect(resolution?.strategy).toBe("anchorKey");
+    expect(resolution?.confidence).toBe(1.0);
+    expect(resolution?.element).toBe(section);
   });
 
-  it("does not require tag-name match for anchorKey resolution", () => {
-    // Host refactored from <section> to <div> — semantic key still wins.
+  it("does not enforce tag-name match — host can refactor section → div", () => {
     const div = document.createElement("div");
     div.setAttribute("data-feedback-anchor", "order-card.services");
     div.textContent = "Services panel";
@@ -113,7 +117,7 @@ describe("resolveAnchor — anchorKey strategy", () => {
       cssSelector: "section",
       xpath: "/html/body/section",
       textSnippet: "Services panel",
-      elementTag: "SECTION", // intentional mismatch
+      elementTag: "SECTION",
       textPrefix: "",
       textSuffix: "",
       fingerprint: "",
@@ -121,9 +125,8 @@ describe("resolveAnchor — anchorKey strategy", () => {
       anchorKey: "order-card.services",
     });
 
-    expect(resolution).not.toBeNull();
-    expect(resolution!.strategy).toBe("anchorKey");
-    expect(resolution!.element).toBe(div);
+    expect(resolution?.strategy).toBe("anchorKey");
+    expect(resolution?.element).toBe(div);
   });
 
   it("falls back to the next strategy when anchorKey is not in the DOM", () => {
@@ -145,8 +148,7 @@ describe("resolveAnchor — anchorKey strategy", () => {
       anchorKey: "missing.key",
     });
 
-    expect(resolution).not.toBeNull();
-    expect(resolution!.strategy).toBe("id");
+    expect(resolution?.strategy).toBe("id");
   });
 
   it("safely escapes special characters in anchorKey", () => {
@@ -167,7 +169,29 @@ describe("resolveAnchor — anchorKey strategy", () => {
       anchorKey: 'tricky"key',
     });
 
-    expect(resolution).not.toBeNull();
-    expect(resolution!.strategy).toBe("anchorKey");
+    expect(resolution?.strategy).toBe("anchorKey");
+    expect(resolution?.element).toBe(el);
+  });
+
+  it("text snippet mismatch causes anchorKey to be skipped", () => {
+    const el = document.createElement("section");
+    el.setAttribute("data-feedback-anchor", "key");
+    el.textContent = "completely different content";
+    document.body.appendChild(el);
+
+    const resolution = resolveAnchor({
+      cssSelector: "section",
+      xpath: "/html/body/section",
+      textSnippet: "expected snippet that does not match",
+      elementTag: "SECTION",
+      textPrefix: "",
+      textSuffix: "",
+      fingerprint: "",
+      neighborText: "",
+      anchorKey: "key",
+    });
+
+    // anchorKey skipped, falls through to other strategies (which all fail) → null
+    expect(resolution).toBeNull();
   });
 });

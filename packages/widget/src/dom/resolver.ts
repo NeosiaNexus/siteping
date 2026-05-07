@@ -56,7 +56,7 @@ function textMatches(el: Element, anchor: AnchorData): boolean {
 export function resolveAnchor(anchor: AnchorData): AnchorResolution | null {
   // Level 0: Semantic anchor key (host-controlled, most stable)
   if (anchor.anchorKey) {
-    // Use attribute selector with quoted value to safely escape arbitrary keys
+    // Escape backslash and double-quote so an arbitrary key never breaks the selector
     const escaped = anchor.anchorKey.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
     try {
       const el = document.querySelector(`[${ANCHOR_KEY_ATTR}="${escaped}"]`);

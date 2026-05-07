@@ -229,27 +229,26 @@ export class Popup {
       // Save focus to restore on close
       this.previouslyFocused = document.activeElement as HTMLElement | null;
 
-      // Position: prefer below the rect, 8px gap.
-      // Account for bottom toolbar (52px) when checking available space.
-      const popupH = 260;
-      const toolbarH = 52;
-      const maxBottom = window.innerHeight - toolbarH;
+      // Position: bottom-left of rect, 8px below
+      const popupH = 220;
+      const popupW = 300;
       let top = rectBounds.bottom + 8;
       let left = rectBounds.left;
 
-      if (top + popupH > maxBottom) {
-        // Not enough space below — try above
+      // Vertical: prefer below; fall back to above; otherwise clamp inside viewport
+      if (top + popupH > window.innerHeight) {
         const aboveTop = rectBounds.top - popupH - 8;
         if (aboveTop >= 8) {
           top = aboveTop;
         } else {
-          // Neither fits — clamp to stay within viewport above toolbar
-          top = Math.max(8, maxBottom - popupH);
+          // Rect is taller than the viewport allows on either side —
+          // clamp to keep the popup fully visible.
+          top = window.innerHeight - popupH - 8;
         }
       }
       // Collision: flip right if not enough space on left
-      if (left + 300 > window.innerWidth) {
-        left = rectBounds.right - 300;
+      if (left + popupW > window.innerWidth) {
+        left = rectBounds.right - popupW;
       }
       left = Math.max(8, left);
       top = Math.max(8, top);

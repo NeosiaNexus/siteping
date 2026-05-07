@@ -40,9 +40,6 @@ export function generateAnchor(element: Element): AnchorData {
   const fingerprint = generateFingerprint(element);
   const neighbor = neighborText(element);
 
-  // Semantic anchor: nearest ancestor with `data-feedback-anchor`, including
-  // the element itself. Returns null when no semantic ancestor exists, in
-  // which case re-anchoring falls back to the existing chain.
   const semanticAncestor = element.closest(`[${ANCHOR_KEY_ATTR}]`);
   const anchorKey = semanticAncestor?.getAttribute(ANCHOR_KEY_ATTR) ?? null;
 
@@ -70,12 +67,12 @@ function containsRect(el: Element, rect: DOMRect): boolean {
  * Find the best DOM element to use as the rect's anchor.
  *
  * Priority:
- * 1. Closest ancestor with `data-feedback-anchor` whose bounds contain the rect
- *    (semantic anchors are typically narrow section roots — anchoring against
- *    them keeps the percentage-based rect stable across viewport changes,
- *    instead of stretching to the width of `<main>`).
+ * 1. Closest ancestor with `data-feedback-anchor` whose bounds contain the rect —
+ *    semantic anchors are typically narrow section roots, so anchoring against
+ *    them keeps the percentage-based rect stable across viewport changes
+ *    instead of stretching to the width of `<main>` or `<body>`.
  * 2. Smallest ancestor that contains the rect (legacy behavior).
- * 3. `document.body` fallback — ensures percentages stay in [0, 1].
+ * 3. `document.body` fallback — keeps percentages in [0, 1].
  */
 export function findAnchorElement(rect: DOMRect, root: Element = document.documentElement): Element {
   const centerX = rect.x + rect.width / 2;

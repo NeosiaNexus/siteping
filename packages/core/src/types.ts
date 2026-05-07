@@ -24,7 +24,7 @@ export interface SitepingConfig {
   locale?: "en" | "fr" | "de" | "es" | "it" | "pt" | "ru" | (string & {}) | undefined;
   /**
    * Returns the current page scope for annotations and panel filtering.
-   * Called on every initial markers load and on `instance.refresh()`.
+   * Called on initial markers load and on `instance.refresh()`.
    *
    * Default: `{ url: window.location.pathname, urlPattern: null }` — annotations
    * are scoped strictly to the current pathname.
@@ -41,6 +41,26 @@ export interface SitepingConfig {
    * Set to `false` to revert to the legacy project-wide behavior.
    */
   scopeAnnotationsByUrl?: boolean | undefined;
+  /**
+   * Capture a JPEG screenshot of the annotated area on submit. Defaults to
+   * `false` — opt-in because:
+   *
+   * - it adds runtime weight (~40 KB gzip dynamic chunk for html2canvas,
+   *   loaded only on first capture),
+   * - it embeds page content in the feedback (privacy/GDPR consideration —
+   *   inform end users in your widget host UI when enabling).
+   *
+   * `html2canvas` ships as a regular dependency of `@siteping/widget` so the
+   * dynamic import always resolves; you don't need to install anything extra.
+   *
+   * **Masking sensitive elements:** add `data-siteping-ignore="true"` to any
+   * element you do NOT want captured (password fields, credit-card forms,
+   * API tokens shown in the UI, etc.). The capture predicate skips matching
+   * elements *and their descendants*. Do this BEFORE turning on screenshots
+   * in production — once a feedback is saved, the screenshot is in your DB
+   * (or object storage) regardless of what was on the page.
+   */
+  enableScreenshot?: boolean | undefined;
   /** Called when the widget is skipped (production mode, mobile viewport) */
   onSkip?: (reason: "production" | "mobile") => void;
 
@@ -127,15 +147,22 @@ export interface FeedbackCreateInput {
    * "this type of page" across different instances. Null when the host did not
    * provide a `getPageScope` callback or the route has no template.
    */
-  urlPattern?: string | null;
+  urlPattern?: string | null | undefined;
   viewport: string;
   userAgent: string;
   authorName: string;
   authorEmail: string;
   clientId: string;
   annotations: AnnotationCreateInput[];
-  /** Base64 JPEG data URL of the annotated area. Optional — capture may fail. */
-  screenshotDataUrl?: string | null;
+  /**
+   * Base64 JPEG `data:` URL captured by the widget at submit time.
+   *
+   * Adapters with a configured `ScreenshotStorage` are expected to upload
+   * this and persist the returned URL on `FeedbackRecord.screenshotUrl`.
+   * Adapters without storage may persist the data URL inline (memory /
+   * localStorage / dev) — the widget then renders it directly.
+   */
+  screenshotDataUrl?: string | null | undefined;
 }
 
 /** Input for a single annotation when creating a feedback. */
@@ -155,7 +182,7 @@ export interface AnnotationCreateInput {
    * hosts deliberately place these on layout/section roots that survive DOM
    * refactors and viewport changes. Null when no semantic ancestor exists.
    */
-  anchorKey?: string | null;
+  anchorKey?: string | null | undefined;
   xPct: number;
   yPct: number;
   wPct: number;
@@ -216,6 +243,13 @@ export interface FeedbackRecord {
   createdAt: Date;
   updatedAt: Date;
   annotations: AnnotationRecord[];
+  /**
+   * URL the widget renders as `<img src>`. Either an `https://...` from a
+   * configured `ScreenshotStorage`, or a `data:image/jpeg;base64,...` URL
+   * inline-persisted by adapters without storage. Null when no screenshot
+   * was captured (legacy records, capture failed, or host disabled it).
+   */
+  screenshotUrl: string | null;
 }
 
 /** A persisted annotation record returned by the store. */
@@ -364,11 +398,10 @@ export interface FeedbackPayload {
   message: string;
   url: string;
   /**
-   * Optional parameterized URL template (e.g. `/orders/:orderId`) supplied by
-   * `SitepingConfig.getPageScope()`. Hosts use this to enable cross-instance
-   * filtering in the panel.
+   * Parameterized URL template (e.g. `/orders/:orderId`) supplied by
+   * `SitepingConfig.getPageScope()`. Null when the host did not provide one.
    */
-  urlPattern?: string | null;
+  urlPattern?: string | null | undefined;
   viewport: string;
   userAgent: string;
   authorName: string;
@@ -376,8 +409,12 @@ export interface FeedbackPayload {
   annotations: AnnotationPayload[];
   /** Client-generated UUID for deduplication */
   clientId: string;
-  /** Base64 JPEG data URL of the annotated area. Optional — capture may fail. */
-  screenshotDataUrl?: string | null;
+  /**
+   * Base64 JPEG `data:` URL of the annotated area. Captured by the widget
+   * when `enableScreenshot: true` is set in `SitepingConfig`. Null when
+   * disabled or when capture failed silently.
+   */
+  screenshotDataUrl?: string | null | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -410,7 +447,7 @@ export interface AnchorData {
    * hosts deliberately place these on layout/section roots that survive
    * viewport changes and DOM refactors.
    */
-  anchorKey?: string | null;
+  anchorKey?: string | null | undefined;
 }
 
 /** Drawn rectangle coordinates as percentages relative to the anchor element. */
@@ -458,6 +495,8 @@ export interface FeedbackResponse {
   createdAt: string;
   updatedAt: string;
   annotations: AnnotationResponse[];
+  /** Screenshot URL (data: or http:) — see `FeedbackRecord.screenshotUrl`. */
+  screenshotUrl: string | null;
 }
 
 /** Annotation record as returned by the API. */

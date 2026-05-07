@@ -42,9 +42,38 @@ export const { GET, POST, PATCH, DELETE, OPTIONS } = createSitepingHandler({ pri
 | `projectName` | `string` | **Required.** Filter by project |
 | `type` | `string` | `question` \| `change` \| `bug` \| `other` |
 | `status` | `string` | `open` \| `resolved` |
-| `search` | `string` | Full-text search on message content |
+| `search` | `string` | Substring match on message content (see [Search and case sensitivity](#search-and-case-sensitivity)) |
+| `url` | `string` | Restrict to feedbacks created on this exact URL — used by the panel's "this page" filter |
+| `urlPattern` | `string` | Restrict to feedbacks created on this URL template (e.g. `/orders/:id`) — used by the panel's "this type of page" filter |
 | `page` | `number` | Pagination (default: 1) |
 | `limit` | `number` | Items per page (default: 50, max: 100) |
+
+### Search and case sensitivity
+
+The `?search=` filter is built with Prisma's `contains` operator. Whether it
+matches case-insensitively depends on the database provider:
+
+| Provider | Default `caseInsensitiveSearch` | Behaviour |
+|----------|---------------------------------|-----------|
+| `postgresql`, `mongodb`, `cockroachdb` | `true` (auto) | Emits `mode: "insensitive"` — case-insensitive across all letters, including non-ASCII. These are the providers whose generated Prisma client exposes `mode?: QueryMode` on string filters. |
+| `mysql`, `sqlite`, `sqlserver` | `false` (auto) | No `mode` field (Prisma's generated client doesn't expose it for these providers — passing it raises `PrismaClientValidationError: Unknown argument 'mode'`). Falls back to each database's default `LIKE` semantics: MySQL is case-insensitive on `_ci` collations (the default); SQLite is case-insensitive on ASCII; SQL Server depends on column collation. |
+| Unknown / undetectable | `false` (auto) | `contains` without `mode` works on every provider; `mode: "insensitive"` would throw on MySQL/SQLite/SQL Server. Pass `caseInsensitiveSearch: true` explicitly if you know your client is Postgres/Mongo/Cockroach but the provider auto-detection failed. |
+
+Auto-detection reads the active provider from the Prisma client at runtime.
+Override it explicitly when the default is wrong for your setup:
+
+```ts
+export const { GET, POST, PATCH, DELETE, OPTIONS } = createSitepingHandler({
+  prisma,
+  caseInsensitiveSearch: false, // force ASCII-only match (e.g. SQL Server with case-sensitive collation)
+})
+```
+
+Or when constructing `PrismaStore` directly:
+
+```ts
+const store = new PrismaStore(prisma, { caseInsensitiveSearch: false })
+```
 
 ## Validation Constraints
 
@@ -63,9 +92,10 @@ All incoming requests are validated with Zod before hitting the database.
 | `authorName` | 1 to **200** characters |
 | `authorEmail` | Valid email format, max **200** characters |
 | `clientId` | Non-empty string (client-generated UUID for deduplication) |
+| `urlPattern` | Optional string (max 2000) or `null` — parameterized route template for cross-instance grouping |
 | `annotations` | Array of annotation objects (see below) |
 
-**Annotation fields:** `cssSelector`, `xpath`, `elementTag` must be non-empty. `wPct`, `hPct` must be positive. `viewportW`, `viewportH` must be positive integers. `devicePixelRatio` must be positive (defaults to `1`).
+**Annotation fields:** `cssSelector`, `xpath`, `elementTag` must be non-empty. `wPct`, `hPct` must be positive. `viewportW`, `viewportH` must be positive integers. `devicePixelRatio` must be positive (defaults to `1`). `anchorKey` is optional (max 200 chars) — semantic anchor identifier from the closest `data-feedback-anchor` ancestor.
 
 ### PATCH — Resolve/unresolve (`feedbackPatchSchema`)
 
@@ -86,6 +116,64 @@ Use the CLI to set up models automatically:
 npx @siteping/cli init
 npx prisma db push
 ```
+
+### Upgrading on a large existing table
+
+When upgrading to a version that adds an index (e.g. `@@index([projectName, url])` for the page-scope feature), `prisma db push` issues `CREATE INDEX` *without* `CONCURRENTLY` — that takes a SHARE lock on the table for the duration, blocking writes. On a multi-million-row Postgres `SitepingFeedback` table this can mean minutes of write timeouts.
+
+**Recommended for large prod tables:** run the index creation manually with `CONCURRENTLY` *before* `prisma db push`:
+
+```sql
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "SitepingFeedback_projectName_url_idx"
+  ON "SitepingFeedback" ("projectName", "url");
+```
+
+Then `prisma db push` sees the index already exists and skips it.
+
+## Screenshot Storage
+
+When the widget is configured with `enableScreenshot: true`, every feedback POST may include a base64 JPEG `screenshotDataUrl`. By default the adapter persists the data URL **inline** on `Feedback.screenshotUrl`, which is convenient for dev but quickly blows up your DB in production (a 1200px JPEG is ~50–150 KB per row).
+
+> ⚠️ **Privacy** — screenshots embed page content, including anything sensitive currently on screen (password fields, credit-card forms, API tokens, etc.). Mark sensitive elements with `data-siteping-ignore="true"` BEFORE turning on screenshots in production. The capture predicate skips matching elements *and their descendants*.
+
+> ⚠️ **Abuse surface** — screenshot uploads arrive over the public POST endpoint (the widget runs unauthenticated in the browser). Without rate limiting an attacker can flood your storage / DB with 1.5 MB images. Configure rate limiting at your reverse proxy / framework middleware before enabling screenshots in production.
+
+For production, plug a `ScreenshotStorage` (S3, R2, B2, Cloudflare Images, local FS, …) into the handler:
+
+```ts
+import type { ScreenshotStorage } from "@siteping/adapter-prisma";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
+const s3 = new S3Client({ region: "eu-west-3" });
+
+const screenshotStorage: ScreenshotStorage = {
+  async upload(dataUrl, ctx) {
+    const buf = Buffer.from(dataUrl.split(",")[1], "base64");
+    const key = `feedback/${ctx.feedbackId}.jpg`;
+    await s3.send(new PutObjectCommand({
+      Bucket: "my-bucket",
+      Key: key,
+      Body: buf,
+      ContentType: ctx.mimeType,
+    }));
+    return { url: `https://cdn.example.com/${key}` };
+  },
+  // Optional: cleanup on feedback delete
+  async delete(url) {
+    const key = url.split("/").pop();
+    if (key) await s3.send(new DeleteObjectCommand({ Bucket: "my-bucket", Key: key }));
+  },
+};
+
+export const { GET, POST, PATCH, DELETE, OPTIONS } = createSitepingHandler({
+  prisma,
+  screenshotStorage,
+});
+```
+
+When the upload fails (transient S3 outage etc.), the adapter persists `screenshotUrl: null` and emits a warn — the feedback message itself is preserved, only the screenshot is dropped. An inline fallback would silently bloat Postgres unnoticed during a multi-minute outage; operators who prefer that trade-off can wrap their `upload` to catch internally and return an inline data URL on failure.
+
+`ctx.feedbackId` passed to `upload()` is the client-supplied UUID — sanitize it before mapping to a filesystem path. Object stores like S3 treat it as a key prefix and are safe by default.
 
 ## Authentication
 

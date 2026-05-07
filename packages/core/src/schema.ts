@@ -50,6 +50,8 @@ const _SITEPING_MODELS = {
       message: { type: "String", nativeType: "Text" },
       status: { type: "String", default: '"open"' },
       url: { type: "String" },
+      urlPattern: { type: "String", optional: true },
+      screenshotUrl: { type: "String", optional: true, nativeType: "Text" },
       viewport: { type: "String" },
       userAgent: { type: "String" },
       authorName: { type: "String" },
@@ -63,7 +65,11 @@ const _SITEPING_MODELS = {
         relation: { kind: "1-to-many", model: "SitepingAnnotation" },
       },
     },
-    indexes: [{ fields: ["projectName"] }, { fields: ["projectName", "status", "createdAt"] }],
+    indexes: [
+      { fields: ["projectName"] },
+      { fields: ["projectName", "status", "createdAt"] },
+      { fields: ["projectName", "url"] },
+    ],
   },
   SitepingAnnotation: {
     fields: {
@@ -88,6 +94,7 @@ const _SITEPING_MODELS = {
       textSuffix: { type: "String", nativeType: "Text" },
       fingerprint: { type: "String" },
       neighborText: { type: "String", nativeType: "Text" },
+      anchorKey: { type: "String", optional: true },
       xPct: { type: "Float" },
       yPct: { type: "Float" },
       wPct: { type: "Float" },

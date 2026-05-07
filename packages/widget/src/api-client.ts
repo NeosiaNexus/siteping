@@ -26,7 +26,7 @@ export interface GetFeedbacksOptions {
   search?: string;
   /** Restrict to feedbacks created on this exact URL (path). */
   url?: string;
-  /** Restrict to feedbacks created on this URL pattern (e.g. "/orders/:orderId"). */
+  /** Restrict to feedbacks created on this URL pattern (e.g. `/orders/:orderId`). */
   urlPattern?: string;
 }
 

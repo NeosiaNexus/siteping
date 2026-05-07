@@ -84,8 +84,8 @@ export class Panel {
   // i18n helpers
   private readonly bulkI18n: typeof BULK_I18N_EN;
 
-  // Page scope — supplied by launcher so the panel can scope its results
-  // to the current page (or template) and filter markers accordingly.
+  // Page scope — supplied by launcher so the panel can scope its results to
+  // the current page (or template) and filter markers accordingly.
   private readonly getScope: () => PageScope;
   private readonly scopeAnnotationsByUrl: boolean;
   /** "this" = current url, "template" = url pattern, "all" = no scope filter */
@@ -169,8 +169,8 @@ export class Panel {
     searchWrap.appendChild(this.searchInput);
 
     // Filter bar (type dropdown + status segmented + scope segmented).
-    // Scope is rendered second-row when the page provides a urlPattern, so the
-    // user can widen results to "this type of page" or "all pages".
+    // The scope control gives users a fast way to widen results to "this type
+    // of page" or "all pages" when the host provides a route template.
     const filterBar = el("div", { class: "sp-filter-bar" });
     filterBar.appendChild(this.buildTypeDropdown());
     filterBar.appendChild(this.buildStatusSegmented());
@@ -509,7 +509,7 @@ export class Panel {
       this.renderList();
       // Markers always render only the current-URL slice — even when the panel
       // shows a wider scope ("template" or "all"), markers stay strictly local
-      // to prevent cross-page DOM mismatches.
+      // so the user never sees out-of-context dots on the page.
       const markerFeedbacks = this.scopeAnnotationsByUrl ? feedbacks.filter((f) => f.url === scope.url) : feedbacks;
       this.markers.render(markerFeedbacks);
     } catch (error) {
@@ -1180,8 +1180,8 @@ export class Panel {
   /**
    * Build the page-scope segmented control: "this page / this type / all".
    * The "this type" button is hidden when the current scope has no urlPattern
-   * (host did not provide one for this route). The control is updated on every
-   * `loadFeedbacks` to reflect navigation.
+   * (host did not provide one for this route). Visibility is refreshed on
+   * every `loadFeedbacks` so SPA navigation stays consistent.
    */
   private buildScopeSegmented(): HTMLElement {
     this.scopeOptions = [
@@ -1313,6 +1313,11 @@ export class Panel {
     if (this.isOpen) {
       await this.loadFeedbacks();
     }
+  }
+
+  /** Whether the panel is currently open — used by the launcher to coordinate marker refreshes. */
+  get isCurrentlyOpen(): boolean {
+    return this.isOpen;
   }
 
   destroy(): void {
