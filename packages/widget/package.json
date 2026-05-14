@@ -19,7 +19,8 @@
   "scripts": {
     "build": "tsup && node ../../scripts/fix-dts.mjs dist",
     "check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "size": "NODE_PATH=./node_modules size-limit"
   },
   "keywords": [
     "feedback",
@@ -58,6 +59,8 @@
   },
   "devDependencies": {
     "@medv/finder": "^3.2.0",
-    "@siteping/core": "workspace:*"
+    "@siteping/core": "workspace:*",
+    "@size-limit/preset-small-lib": "^12.1.0",
+    "size-limit": "^12.1.0"
   }
 }
