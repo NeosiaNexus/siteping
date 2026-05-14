@@ -184,10 +184,7 @@ function reportError(config: WebhookConfig, err: Error, feedbackId: string): voi
  * promise on the floor (`void dispatchWebhooks(...)`) so the HTTP response
  * isn't held back on slow receivers.
  */
-export async function dispatchWebhooks(
-  configs: readonly WebhookConfig[],
-  feedback: FeedbackRecord,
-): Promise<void> {
+export async function dispatchWebhooks(configs: readonly WebhookConfig[], feedback: FeedbackRecord): Promise<void> {
   if (configs.length === 0) return;
   await Promise.all(configs.map((c) => dispatchWebhook(c, feedback)));
 }

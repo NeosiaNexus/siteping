@@ -143,9 +143,7 @@ describe("dispatchWebhook", () => {
   it("invokes onError on a 500 response and does not throw", async () => {
     fetchSpy.mockResolvedValueOnce(new Response("nope", { status: 500 }));
     const onError = vi.fn();
-    await expect(
-      dispatchWebhook({ url: "https://hooks.example.com", onError }, FEEDBACK),
-    ).resolves.toBeUndefined();
+    await expect(dispatchWebhook({ url: "https://hooks.example.com", onError }, FEEDBACK)).resolves.toBeUndefined();
     expect(onError).toHaveBeenCalledOnce();
     const [err, id] = onError.mock.calls[0] as [Error, string];
     expect(err).toBeInstanceOf(Error);
@@ -156,9 +154,7 @@ describe("dispatchWebhook", () => {
   it("invokes onError on a network failure and does not throw", async () => {
     fetchSpy.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     const onError = vi.fn();
-    await expect(
-      dispatchWebhook({ url: "https://hooks.example.com", onError }, FEEDBACK),
-    ).resolves.toBeUndefined();
+    await expect(dispatchWebhook({ url: "https://hooks.example.com", onError }, FEEDBACK)).resolves.toBeUndefined();
     expect(onError).toHaveBeenCalledOnce();
     expect((onError.mock.calls[0] as [Error, string])[0].message).toBe("Failed to fetch");
   });
@@ -188,10 +184,7 @@ describe("dispatchWebhook", () => {
 
     vi.useFakeTimers();
     const onError = vi.fn();
-    const promise = dispatchWebhook(
-      { url: "https://hooks.example.com", timeoutMs: 50, onError },
-      FEEDBACK,
-    );
+    const promise = dispatchWebhook({ url: "https://hooks.example.com", timeoutMs: 50, onError }, FEEDBACK);
     await vi.advanceTimersByTimeAsync(60);
     await promise;
     vi.useRealTimers();
@@ -205,9 +198,7 @@ describe("dispatchWebhook", () => {
     const onError = vi.fn(() => {
       throw new Error("user bug");
     });
-    await expect(
-      dispatchWebhook({ url: "https://hooks.example.com", onError }, FEEDBACK),
-    ).resolves.toBeUndefined();
+    await expect(dispatchWebhook({ url: "https://hooks.example.com", onError }, FEEDBACK)).resolves.toBeUndefined();
     // The thrown user error is reported via console.warn so it isn't swallowed.
     expect(warnSpy).toHaveBeenCalledOnce();
     expect(String(warnSpy.mock.calls[0]?.[0])).toContain("user bug");
