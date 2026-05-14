@@ -15,6 +15,10 @@ export function WidgetInit() {
         forceShow: true,
         accentColor: "#173CFF",
         locale: "en",
+        // Demo: capture console + failed XHR/fetch on each feedback so
+        // viewers can replay how the page got into the state they
+        // annotated. Safe in this sandbox — no PII is logged.
+        captureDiagnostics: true,
       });
     });
 

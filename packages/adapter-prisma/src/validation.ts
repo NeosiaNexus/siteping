@@ -41,6 +41,28 @@ const annotationSchema = z.object({
   devicePixelRatio: z.number().positive().default(1),
 });
 
+// Diagnostics caps mirror the widget defaults — the widget never sends more
+// than these, but the schema enforces it server-side too so a tampered
+// client can't blow up the JSON column with megabytes of garbage.
+const consoleEntrySchema = z.object({
+  level: z.enum(["log", "info", "warn", "error"]),
+  timestamp: z.string().max(50),
+  message: z.string().max(600),
+});
+
+const networkEntrySchema = z.object({
+  url: z.string().max(2000),
+  method: z.string().max(20),
+  status: z.number().int().min(0).max(599),
+  durationMs: z.number().min(0).max(600_000),
+  timestamp: z.string().max(50),
+});
+
+const diagnosticsSchema = z.object({
+  console: z.array(consoleEntrySchema).max(50),
+  network: z.array(networkEntrySchema).max(20),
+});
+
 export const feedbackCreateSchema = z.object({
   projectName: z.string().min(1).max(200),
   type: z.enum(FEEDBACK_TYPES),
@@ -71,6 +93,10 @@ export const feedbackCreateSchema = z.object({
     .regex(/^data:image\/(jpeg|png|webp);base64,/, "screenshotDataUrl must be a data:image/* base64 URL")
     .nullable()
     .optional(),
+  // Optional console + failed-network snapshot. The widget only attaches
+  // this when `captureDiagnostics` is enabled; null + omitted are both
+  // accepted so existing clients keep working unchanged.
+  diagnostics: diagnosticsSchema.nullable().optional(),
 });
 
 export const feedbackPatchSchema = z.object({
@@ -131,6 +157,25 @@ export interface AnnotationInput {
   devicePixelRatio: number;
 }
 
+export interface ConsoleDiagnosticInput {
+  level: "log" | "info" | "warn" | "error";
+  timestamp: string;
+  message: string;
+}
+
+export interface NetworkDiagnosticInput {
+  url: string;
+  method: string;
+  status: number;
+  durationMs: number;
+  timestamp: string;
+}
+
+export interface DiagnosticsInput {
+  console: ConsoleDiagnosticInput[];
+  network: NetworkDiagnosticInput[];
+}
+
 export interface FeedbackCreateInput {
   projectName: string;
   type: FeedbackType;
@@ -144,6 +189,7 @@ export interface FeedbackCreateInput {
   annotations: AnnotationInput[];
   clientId: string;
   screenshotDataUrl?: string | null | undefined;
+  diagnostics?: DiagnosticsInput | null | undefined;
 }
 
 export interface FeedbackPatchInput {

@@ -173,6 +173,11 @@ export class PrismaStore implements SitepingStore {
         url: data.url,
         urlPattern: data.urlPattern ?? null,
         screenshotUrl,
+        // Persisted as JSON when the model has a `diagnostics Json?` column.
+        // Hosts that haven't run `npx siteping sync` keep their schema as-is
+        // and Prisma will throw if we pass an unknown column, so omit the
+        // key entirely when diagnostics is null.
+        ...(data.diagnostics ? { diagnostics: data.diagnostics } : {}),
         viewport: data.viewport,
         userAgent: data.userAgent,
         authorName: data.authorName,
@@ -537,6 +542,7 @@ export function createSitepingHandler({
           clientId: data.clientId,
           annotations: data.annotations.map(flattenAnnotation),
           screenshotDataUrl: data.screenshotDataUrl ?? null,
+          diagnostics: data.diagnostics ?? null,
         });
 
         return withCors(Response.json(feedback, { status: 201 }), corsHeaders);

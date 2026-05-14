@@ -992,4 +992,106 @@ describe("DetailView", () => {
       expect(pageValue.textContent).toBe("not-a-valid-url");
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Diagnostics section — captureDiagnostics snapshot rendering
+  // -------------------------------------------------------------------------
+
+  describe("diagnostics section", () => {
+    it("does not render the section when diagnostics is null", () => {
+      setup.view.show(makeFeedback(), 1);
+      expect(setup.view.element.querySelector(".sp-detail-diag")).toBeNull();
+    });
+
+    it("does not render the section when both arrays are empty", () => {
+      setup.view.show(
+        makeFeedback({
+          diagnostics: { console: [], network: [] } as unknown as never,
+        } as Partial<FeedbackResponse>),
+        1,
+      );
+      expect(setup.view.element.querySelector(".sp-detail-diag")).toBeNull();
+    });
+
+    it("renders console + network entries with the correct counts", () => {
+      const fb = makeFeedback({
+        diagnostics: {
+          console: [
+            { level: "log", timestamp: "2026-05-14T10:00:00Z", message: "boot up" },
+            { level: "error", timestamp: "2026-05-14T10:00:01Z", message: "TypeError: foo is not a function" },
+          ],
+          network: [
+            {
+              url: "/api/orders/42",
+              method: "GET",
+              status: 500,
+              durationMs: 312,
+              timestamp: "2026-05-14T10:00:02Z",
+            },
+          ],
+        } as unknown as never,
+      } as Partial<FeedbackResponse>);
+      setup.view.show(fb, 1);
+
+      const diag = setup.view.element.querySelector(".sp-detail-diag");
+      expect(diag).not.toBeNull();
+
+      // Toggle counts reflect the entries
+      const counts = diag!.querySelectorAll(".sp-detail-diag-count");
+      expect(counts).toHaveLength(2);
+      expect(counts[0]?.textContent).toContain("2 console");
+      expect(counts[1]?.textContent).toContain("1 net");
+      // Errors in console paint the count chip red.
+      expect(counts[0]?.classList.contains("sp-detail-diag-count--errors")).toBe(true);
+
+      // The lists exist for both groups, with one row each.
+      const lists = diag!.querySelectorAll(".sp-detail-diag-list");
+      expect(lists).toHaveLength(2);
+      const consoleItems = lists[0]!.querySelectorAll("li");
+      expect(consoleItems).toHaveLength(2);
+      expect(consoleItems[1]?.querySelector(".sp-detail-diag-level")?.classList.contains("sp-detail-diag-level--error")).toBe(true);
+      const netItems = lists[1]!.querySelectorAll("li");
+      expect(netItems).toHaveLength(1);
+      expect(netItems[0]?.querySelector(".sp-detail-diag-net-status")?.textContent).toBe("500");
+      expect(netItems[0]?.querySelector(".sp-detail-diag-net-method")?.textContent).toBe("GET");
+      expect(netItems[0]?.querySelector(".sp-detail-diag-net-url")?.textContent).toContain("/api/orders/42");
+    });
+
+    it("toggle expand/collapse flips aria-expanded and body visibility", () => {
+      const fb = makeFeedback({
+        diagnostics: {
+          console: [{ level: "warn", timestamp: "2026-05-14T10:00:00Z", message: "warned" }],
+          network: [],
+        } as unknown as never,
+      } as Partial<FeedbackResponse>);
+      setup.view.show(fb, 1);
+
+      const toggle = setup.view.element.querySelector<HTMLButtonElement>(".sp-detail-diag-toggle")!;
+      const body = setup.view.element.querySelector(".sp-detail-diag-body")!;
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      expect(body.classList.contains("sp-detail-diag-body--open")).toBe(false);
+
+      toggle.click();
+      expect(toggle.getAttribute("aria-expanded")).toBe("true");
+      expect(body.classList.contains("sp-detail-diag-body--open")).toBe(true);
+
+      toggle.click();
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      expect(body.classList.contains("sp-detail-diag-body--open")).toBe(false);
+    });
+
+    it("renders network errors with status 0 as 'ERR'", () => {
+      const fb = makeFeedback({
+        diagnostics: {
+          console: [],
+          network: [
+            { url: "/api/down", method: "POST", status: 0, durationMs: 50, timestamp: "2026-05-14T10:00:00Z" },
+          ],
+        } as unknown as never,
+      } as Partial<FeedbackResponse>);
+      setup.view.show(fb, 1);
+      const status = setup.view.element.querySelector(".sp-detail-diag-net-status");
+      expect(status?.textContent).toBe("ERR");
+    });
+  });
 });

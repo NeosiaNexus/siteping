@@ -61,6 +61,32 @@ export interface SitepingConfig {
    * (or object storage) regardless of what was on the page.
    */
   enableScreenshot?: boolean | undefined;
+  /**
+   * Capture the last few `console.*` calls and failed network requests
+   * (HTTP >= 400 or network error) at the moment a feedback is submitted.
+   *
+   * Lets reviewers replay the technical context that led to the report —
+   * stack traces, 500 responses, dead third-party scripts. Great for the
+   * "the page just doesn't work" feedback that contains zero detail.
+   *
+   * - `true` — capture with defaults (50 console / 20 network entries).
+   * - `false` (default) — no capture, no monkey-patching.
+   * - object — per-channel toggles + custom buffer sizes.
+   *
+   * **Privacy considerations:** console messages may contain anything the
+   * host page logs, including user data. Failed network requests record the
+   * URL (with query string) but never the response body. Inform end users
+   * before enabling in environments where they might log sensitive values.
+   */
+  captureDiagnostics?:
+    | boolean
+    | {
+        console?: boolean;
+        network?: boolean;
+        maxConsoleEntries?: number;
+        maxNetworkEntries?: number;
+      }
+    | undefined;
   /** Called when the widget is skipped (production mode, mobile viewport) */
   onSkip?: (reason: "production" | "mobile") => void;
 
@@ -163,6 +189,12 @@ export interface FeedbackCreateInput {
    * localStorage / dev) — the widget then renders it directly.
    */
   screenshotDataUrl?: string | null | undefined;
+  /**
+   * Optional console + failed-network snapshot captured by the widget when
+   * `SitepingConfig.captureDiagnostics` is enabled. Stored as JSON on
+   * `FeedbackRecord.diagnostics` so reviewers can replay the context.
+   */
+  diagnostics?: DiagnosticsSnapshot | null | undefined;
 }
 
 /** Input for a single annotation when creating a feedback. */
@@ -250,6 +282,11 @@ export interface FeedbackRecord {
    * was captured (legacy records, capture failed, or host disabled it).
    */
   screenshotUrl: string | null;
+  /**
+   * Console + failed-network snapshot captured at submit time. Null when
+   * diagnostics weren't enabled on the widget side.
+   */
+  diagnostics: DiagnosticsSnapshot | null;
 }
 
 /** A persisted annotation record returned by the store. */
@@ -415,6 +452,44 @@ export interface FeedbackPayload {
    * disabled or when capture failed silently.
    */
   screenshotDataUrl?: string | null | undefined;
+  /**
+   * Snapshot of the last few console messages and failed network requests
+   * captured at submit time when `captureDiagnostics` is enabled.
+   */
+  diagnostics?: DiagnosticsSnapshot | null | undefined;
+}
+
+/** A single console entry captured by `ConsoleBuffer`. */
+export interface ConsoleDiagnosticEntry {
+  level: "log" | "info" | "warn" | "error";
+  /** ISO 8601 timestamp captured at log time. */
+  timestamp: string;
+  /** Best-effort string representation of the original console args. */
+  message: string;
+}
+
+/** A single failed network request captured by `NetworkBuffer`. */
+export interface NetworkDiagnosticEntry {
+  url: string;
+  method: string;
+  /** HTTP status; 0 when the request never reached the server. */
+  status: number;
+  /** End-to-end duration in ms. */
+  durationMs: number;
+  /** ISO 8601 timestamp at the moment the request was initiated. */
+  timestamp: string;
+}
+
+/**
+ * Diagnostics captured by the widget when `captureDiagnostics` is enabled.
+ *
+ * Both arrays are bounded (default: 50 console / 20 network). Adapters that
+ * support diagnostics should persist this as a JSON blob alongside the
+ * feedback so reviewers can replay the context that led to the report.
+ */
+export interface DiagnosticsSnapshot {
+  console: ConsoleDiagnosticEntry[];
+  network: NetworkDiagnosticEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -497,6 +572,8 @@ export interface FeedbackResponse {
   annotations: AnnotationResponse[];
   /** Screenshot URL (data: or http:) — see `FeedbackRecord.screenshotUrl`. */
   screenshotUrl: string | null;
+  /** Console + failed-network snapshot, or null when diagnostics weren't captured. */
+  diagnostics: DiagnosticsSnapshot | null;
 }
 
 /** Annotation record as returned by the API. */

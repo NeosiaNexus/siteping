@@ -1,4 +1,5 @@
 import type {
+  DiagnosticsSnapshot,
   FeedbackPayload,
   FeedbackResponse,
   PageScope,
@@ -9,6 +10,8 @@ import type {
 import { Annotator } from "./annotator.js";
 import { ApiClient, flushRetryQueue, type WidgetClient } from "./api-client.js";
 import { MOBILE_BREAKPOINT, PAGE_SIZE, Z_INDEX_MAX } from "./constants.js";
+import { ConsoleBuffer } from "./diagnostics/console-buffer.js";
+import { NetworkBuffer } from "./diagnostics/network-buffer.js";
 import { EventBus, type PublicWidgetEvents, type WidgetEvents } from "./events.js";
 import { Fab } from "./fab.js";
 import { createT, type TFunction } from "./i18n/index.js";
@@ -22,6 +25,37 @@ import { Tooltip } from "./tooltip.js";
 
 /** Singleton guard — prevents duplicate widgets from overlapping */
 let instance: SitepingInstance | null = null;
+
+interface NormalisedDiagnostics {
+  console: boolean;
+  network: boolean;
+  maxConsoleEntries: number;
+  maxNetworkEntries: number;
+}
+
+/**
+ * Resolve `SitepingConfig.captureDiagnostics` into a normalised shape.
+ *
+ * - `undefined` / `false` → everything off (no monkey-patching).
+ * - `true` → console + network on with the defaults (50 / 20).
+ * - object → per-channel toggles + optional custom sizes; missing booleans
+ *   default to `true` so users can pass `{ maxConsoleEntries: 200 }` and
+ *   still get both channels.
+ */
+function normaliseDiagnosticsOptions(value: SitepingConfig["captureDiagnostics"]): NormalisedDiagnostics {
+  if (value === undefined || value === false) {
+    return { console: false, network: false, maxConsoleEntries: 50, maxNetworkEntries: 20 };
+  }
+  if (value === true) {
+    return { console: true, network: true, maxConsoleEntries: 50, maxNetworkEntries: 20 };
+  }
+  return {
+    console: value.console !== false,
+    network: value.network !== false,
+    maxConsoleEntries: typeof value.maxConsoleEntries === "number" ? value.maxConsoleEntries : 50,
+    maxNetworkEntries: typeof value.maxNetworkEntries === "number" ? value.maxNetworkEntries : 20,
+  };
+}
 
 /** Build a no-op SitepingInstance for when the widget is skipped */
 function skippedInstance(): SitepingInstance {
@@ -117,6 +151,15 @@ export function launch(config: SitepingConfig): SitepingInstance {
     locale,
     scopeAnnotationsByUrl,
   });
+
+  // Diagnostics — capture console + failed network at submit time when
+  // `captureDiagnostics` is set. Buffers are installed eagerly so they
+  // cover the entire session, then snapshotted in the annotation handler
+  // below. We default to `false` even in dev to avoid surprise side
+  // effects; users opt in via the config flag.
+  const diagnosticsOpts = normaliseDiagnosticsOptions(config.captureDiagnostics);
+  const consoleBuffer = diagnosticsOpts.console ? new ConsoleBuffer(diagnosticsOpts.maxConsoleEntries) : null;
+  const networkBuffer = diagnosticsOpts.network ? new NetworkBuffer(diagnosticsOpts.maxNetworkEntries) : null;
 
   const colors = buildThemeColors(config.accentColor, config.theme);
   const bus = new EventBus<WidgetEvents>();
@@ -238,6 +281,17 @@ export function launch(config: SitepingConfig): SitepingInstance {
       // so token/key/secret query params can't leak by construction). Hosts
       // that need origin or query in the identifier override `getPageScope`.
       const scope = getScope();
+
+      // Snapshot the buffers right before submit so the captured slice
+      // matches the moment the user clicked "send", not some earlier point.
+      let diagnostics: DiagnosticsSnapshot | null = null;
+      if (consoleBuffer || networkBuffer) {
+        diagnostics = {
+          console: consoleBuffer?.getEntries() ?? [],
+          network: networkBuffer?.getEntries() ?? [],
+        };
+      }
+
       const payload: FeedbackPayload = {
         projectName: config.projectName,
         type,
@@ -251,6 +305,7 @@ export function launch(config: SitepingConfig): SitepingInstance {
         annotations: [annotation],
         clientId,
         screenshotDataUrl: screenshotDataUrl ?? null,
+        diagnostics,
       };
 
       try {
@@ -306,6 +361,10 @@ export function launch(config: SitepingConfig): SitepingInstance {
       annotator.destroy();
       markers.destroy();
       tooltip.destroy();
+      // Restore the original console / fetch / XHR so the host page isn't
+      // left with patched globals after the widget tears itself down.
+      consoleBuffer?.dispose();
+      networkBuffer?.dispose();
       bus.removeAll();
       publicBus.removeAll();
       liveRegion.remove();
