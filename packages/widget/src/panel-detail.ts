@@ -40,6 +40,9 @@ const ICON_CODE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 
 const ICON_CROSSHAIR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>`;
 
+const ICON_CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`;
+const ICON_TERMINAL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`;
+
 // ---------------------------------------------------------------------------
 // CSS
 // ---------------------------------------------------------------------------
@@ -538,6 +541,180 @@ export const DETAIL_CSS = /* css */ `
     }
   }
 
+  /* ---- Diagnostics Section ---- */
+
+  .sp-detail-diag {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .sp-detail-diag-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--sp-radius);
+    border: 1px solid var(--sp-glass-border-subtle);
+    background: var(--sp-glass-bg-heavy);
+    color: var(--sp-text);
+    font-family: var(--sp-font);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .sp-detail-diag-toggle:hover {
+    background: var(--sp-bg-hover);
+  }
+
+  .sp-detail-diag-toggle svg {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s ease;
+  }
+
+  .sp-detail-diag-toggle[aria-expanded="true"] svg {
+    transform: rotate(90deg);
+  }
+
+  .sp-detail-diag-counts {
+    display: inline-flex;
+    gap: 6px;
+    font-weight: 500;
+    color: var(--sp-text-tertiary);
+  }
+
+  .sp-detail-diag-count {
+    padding: 1px 7px;
+    border-radius: var(--sp-radius-full);
+    background: var(--sp-bg-hover);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sp-detail-diag-count--errors {
+    background: rgba(239, 68, 68, 0.14);
+    color: #ef4444;
+  }
+
+  .sp-detail-diag-body {
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .sp-detail-diag-body--open {
+    display: flex;
+  }
+
+  .sp-detail-diag-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--sp-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .sp-detail-diag-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-radius: var(--sp-radius);
+    border: 1px solid var(--sp-glass-border-subtle);
+    background: var(--sp-glass-bg-heavy);
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .sp-detail-diag-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--sp-glass-border-subtle);
+    font-family: "SF Mono", "Cascadia Code", "Fira Code", "Consolas", monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--sp-text);
+  }
+
+  .sp-detail-diag-list li:last-child {
+    border-bottom: none;
+  }
+
+  .sp-detail-diag-level {
+    flex-shrink: 0;
+    font-weight: 700;
+    width: 44px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 10px;
+  }
+
+  .sp-detail-diag-level--log {
+    color: var(--sp-text-tertiary);
+  }
+  .sp-detail-diag-level--info {
+    color: #3b82f6;
+  }
+  .sp-detail-diag-level--warn {
+    color: #f59e0b;
+  }
+  .sp-detail-diag-level--error {
+    color: #ef4444;
+  }
+
+  .sp-detail-diag-message {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  .sp-detail-diag-net {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .sp-detail-diag-net-status {
+    flex-shrink: 0;
+    font-weight: 700;
+    color: #ef4444;
+    min-width: 32px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sp-detail-diag-net-method {
+    flex-shrink: 0;
+    font-weight: 600;
+    color: var(--sp-text-tertiary);
+    min-width: 44px;
+  }
+
+  .sp-detail-diag-net-url {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--sp-text);
+  }
+
+  .sp-detail-diag-empty {
+    padding: 12px;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--sp-text-tertiary);
+    text-align: center;
+  }
+
   /* ---- Reduced Motion ---- */
 
   @media (prefers-reduced-motion: reduce) {
@@ -630,6 +807,25 @@ function isSafeImageUrl(url: string): boolean {
 function truncate(str: string, max: number): string {
   if (str.length <= max) return str;
   return str.slice(0, max - 1) + "\u2026";
+}
+
+/**
+ * Whether a feedback carries a usable diagnostics payload. We only render the
+ * section when at least one channel has entries; the section title alone with
+ * two empty lists is just noise.
+ */
+function hasDiagnostics(diagnostics: FeedbackResponse["diagnostics"]): boolean {
+  if (!diagnostics) return false;
+  const consoleLen = Array.isArray(diagnostics.console) ? diagnostics.console.length : 0;
+  const networkLen = Array.isArray(diagnostics.network) ? diagnostics.network.length : 0;
+  return consoleLen > 0 || networkLen > 0;
+}
+
+/** Format a duration in ms as a compact "123 ms" / "1.4 s" string. */
+function formatDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "\u2014";
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  return `${(ms / 1000).toFixed(1)} s`;
 }
 
 // ---------------------------------------------------------------------------
@@ -781,6 +977,21 @@ export class DetailView {
       annSection.appendChild(annSectionTitle);
       this.buildAnnotation(annSection, feedback);
       this.content.appendChild(annSection);
+    }
+
+    // Section 5: Diagnostics (only when present + non-empty).
+    // Skipped silently when the widget was launched without capture, so legacy
+    // records (and hosts who never opt in) never see an empty pane.
+    if (hasDiagnostics(feedback.diagnostics)) {
+      const diagSection = this.buildSection(sectionIndex++);
+      const diagSectionTitle = el("div", { class: "sp-detail-section-title" });
+      diagSectionTitle.appendChild(parseSvg(ICON_TERMINAL));
+      const diagTitleText = el("span");
+      setText(diagTitleText, this.t("detail.diagnostics"));
+      diagSectionTitle.appendChild(diagTitleText);
+      diagSection.appendChild(diagSectionTitle);
+      this.buildDiagnostics(diagSection, feedback);
+      this.content.appendChild(diagSection);
     }
 
     // ---- Show with animation ----
@@ -1021,6 +1232,124 @@ export class DetailView {
     });
 
     wrapper.appendChild(gotoBtn);
+    container.appendChild(wrapper);
+  }
+
+  /**
+   * Build the collapsible Diagnostics section.
+   *
+   * Toggle expand/collapse via a single button; the body is hidden by default
+   * to keep the detail view compact. Console entries get a colour-coded level
+   * pill, network entries get a status/method/url row truncated to fit.
+   */
+  private buildDiagnostics(container: HTMLElement, feedback: FeedbackResponse): void {
+    const diag = feedback.diagnostics;
+    if (!diag) return;
+
+    const consoleEntries = Array.isArray(diag.console) ? diag.console : [];
+    const networkEntries = Array.isArray(diag.network) ? diag.network : [];
+    const errorCount = consoleEntries.filter((e) => e.level === "error").length;
+
+    const wrapper = el("div", { class: "sp-detail-diag" });
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "sp-detail-diag-toggle";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", this.t("detail.diagnostics.expand"));
+    const toggleLabel = document.createElement("span");
+    const leftRow = document.createElement("span");
+    leftRow.style.display = "inline-flex";
+    leftRow.style.alignItems = "center";
+    leftRow.style.gap = "8px";
+    leftRow.appendChild(parseSvg(ICON_CHEVRON));
+    setText(toggleLabel, this.t("detail.diagnostics"));
+    leftRow.appendChild(toggleLabel);
+    toggle.appendChild(leftRow);
+
+    const counts = el("span", { class: "sp-detail-diag-counts" });
+    const consoleCount = el("span", {
+      class: `sp-detail-diag-count${errorCount > 0 ? " sp-detail-diag-count--errors" : ""}`,
+    });
+    setText(consoleCount, `${consoleEntries.length} console`);
+    const networkCount = el("span", {
+      class: `sp-detail-diag-count${networkEntries.length > 0 ? " sp-detail-diag-count--errors" : ""}`,
+    });
+    setText(networkCount, `${networkEntries.length} net`);
+    counts.appendChild(consoleCount);
+    counts.appendChild(networkCount);
+    toggle.appendChild(counts);
+
+    const body = el("div", { class: "sp-detail-diag-body" });
+
+    // ---- Console group ----
+    if (consoleEntries.length > 0) {
+      const group = document.createElement("div");
+      const title = el("div", { class: "sp-detail-diag-group-title" });
+      setText(title, this.t("detail.diagnostics.console"));
+      group.appendChild(title);
+
+      const list = document.createElement("ul");
+      list.className = "sp-detail-diag-list";
+      for (const entry of consoleEntries) {
+        const item = document.createElement("li");
+        const level = el("span", {
+          class: `sp-detail-diag-level sp-detail-diag-level--${entry.level}`,
+        });
+        setText(level, entry.level);
+        const msg = el("span", { class: "sp-detail-diag-message" });
+        // Cap the rendered message length to keep the list readable.
+        setText(msg, truncate(entry.message, 240));
+        msg.title = entry.message;
+        item.appendChild(level);
+        item.appendChild(msg);
+        list.appendChild(item);
+      }
+      group.appendChild(list);
+      body.appendChild(group);
+    }
+
+    // ---- Network group ----
+    if (networkEntries.length > 0) {
+      const group = document.createElement("div");
+      const title = el("div", { class: "sp-detail-diag-group-title" });
+      setText(title, this.t("detail.diagnostics.network"));
+      group.appendChild(title);
+
+      const list = document.createElement("ul");
+      list.className = "sp-detail-diag-list";
+      for (const entry of networkEntries) {
+        const item = document.createElement("li");
+        item.classList.add("sp-detail-diag-net");
+        const status = el("span", { class: "sp-detail-diag-net-status" });
+        setText(status, entry.status === 0 ? "ERR" : String(entry.status));
+        const method = el("span", { class: "sp-detail-diag-net-method" });
+        setText(method, entry.method);
+        const url = el("span", { class: "sp-detail-diag-net-url" });
+        setText(url, truncate(entry.url, 120));
+        url.title = `${entry.url} — ${formatDuration(entry.durationMs)}`;
+        item.appendChild(status);
+        item.appendChild(method);
+        item.appendChild(url);
+        list.appendChild(item);
+      }
+      group.appendChild(list);
+      body.appendChild(group);
+    }
+
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true";
+      const next = !expanded;
+      toggle.setAttribute("aria-expanded", String(next));
+      toggle.setAttribute(
+        "aria-label",
+        next ? this.t("detail.diagnostics.collapse") : this.t("detail.diagnostics.expand"),
+      );
+      body.classList.toggle("sp-detail-diag-body--open", next);
+    });
+
+    wrapper.appendChild(toggle);
+    wrapper.appendChild(body);
     container.appendChild(wrapper);
   }
 

@@ -134,6 +134,12 @@ export const ru: Translations = {
   "detail.resolve": "Решить",
   "detail.reopen": "Открыть заново",
   "detail.delete": "Удалить",
+  "detail.diagnostics": "Диагностика",
+  "detail.diagnostics.console": "Консоль",
+  "detail.diagnostics.network": "Сетевые ошибки",
+  "detail.diagnostics.expand": "Показать диагностику",
+  "detail.diagnostics.collapse": "Скрыть диагностику",
+  "detail.diagnostics.noEntries": "Нет записей",
 
   // Keyboard shortcuts overlay
   "shortcuts.title": "Горячие клавиши",

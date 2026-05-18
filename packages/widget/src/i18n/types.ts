@@ -134,6 +134,12 @@ export interface Translations {
   "detail.resolve": string;
   "detail.reopen": string;
   "detail.delete": string;
+  "detail.diagnostics": string;
+  "detail.diagnostics.console": string;
+  "detail.diagnostics.network": string;
+  "detail.diagnostics.expand": string;
+  "detail.diagnostics.collapse": string;
+  "detail.diagnostics.noEntries": string;
 
   // Keyboard shortcuts overlay
   "shortcuts.title": string;

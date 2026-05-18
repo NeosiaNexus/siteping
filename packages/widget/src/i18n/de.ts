@@ -135,6 +135,12 @@ export const de: Translations = {
   "detail.resolve": "Erledigen",
   "detail.reopen": "Wieder öffnen",
   "detail.delete": "Löschen",
+  "detail.diagnostics": "Diagnose",
+  "detail.diagnostics.console": "Konsole",
+  "detail.diagnostics.network": "Fehlgeschlagenes Netzwerk",
+  "detail.diagnostics.expand": "Diagnose anzeigen",
+  "detail.diagnostics.collapse": "Diagnose ausblenden",
+  "detail.diagnostics.noEntries": "Keine Einträge",
 
   // Keyboard shortcuts overlay
   "shortcuts.title": "Tastenkürzel",

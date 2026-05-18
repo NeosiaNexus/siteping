@@ -136,6 +136,12 @@ export const it: Translations = {
   "detail.resolve": "Risolvi",
   "detail.reopen": "Riapri",
   "detail.delete": "Elimina",
+  "detail.diagnostics": "Diagnostica",
+  "detail.diagnostics.console": "Console",
+  "detail.diagnostics.network": "Rete fallita",
+  "detail.diagnostics.expand": "Mostra diagnostica",
+  "detail.diagnostics.collapse": "Nascondi diagnostica",
+  "detail.diagnostics.noEntries": "Nessuna voce",
 
   // Keyboard shortcuts overlay
   "shortcuts.title": "Scorciatoie da tastiera",

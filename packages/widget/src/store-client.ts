@@ -99,6 +99,7 @@ function toResponse(record: FeedbackRecord): FeedbackResponse {
     updatedAt: record.updatedAt.toISOString(),
     annotations: record.annotations.map(toAnnotationResponse),
     screenshotUrl: record.screenshotUrl ?? null,
+    diagnostics: record.diagnostics ?? null,
   };
 }
 

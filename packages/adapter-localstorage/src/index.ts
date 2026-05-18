@@ -141,6 +141,7 @@ export class LocalStorageStore implements SitepingStore {
       // screenshots. Production users should use adapter-prisma with a
       // configured ScreenshotStorage.
       screenshotUrl: data.screenshotDataUrl ?? null,
+      diagnostics: data.diagnostics ?? null,
     };
 
     feedbacks.unshift(record);
@@ -221,5 +222,8 @@ function reviveFeedback(raw: SerializedFeedback): FeedbackRecord {
       ...ann,
       createdAt: new Date(ann.createdAt),
     })),
+    // Legacy records (pre-diagnostics) won't have this key. Default to null
+    // so the field is always present on the in-memory shape.
+    diagnostics: raw.diagnostics ?? null,
   };
 }

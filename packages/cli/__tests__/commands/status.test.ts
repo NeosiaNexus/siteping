@@ -29,6 +29,7 @@ model SitepingFeedback {
   url           String
   urlPattern    String?
   screenshotUrl String?             @db.Text
+  diagnostics   Json?
   viewport      String
   userAgent     String
   authorName    String
@@ -180,6 +181,7 @@ model SitepingFeedback {
   url           String
   urlPattern    String?
   screenshotUrl String?             @db.Text
+  diagnostics   Json?
   viewport      String
   userAgent     String
   authorName    String

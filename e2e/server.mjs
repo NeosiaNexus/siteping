@@ -1,10 +1,11 @@
 import { createServer } from "node:http";
-import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, dirname, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const widgetJs = readFileSync(join(__dirname, "../packages/widget/dist/index.js"), "utf-8");
+const widgetDistDir = join(__dirname, "../packages/widget/dist");
+const widgetJs = readFileSync(join(widgetDistDir, "index.js"), "utf-8");
 
 /** In-memory feedback store */
 let feedbacks = [];
@@ -143,6 +144,21 @@ const server = createServer((req, res) => {
     res.writeHead(200, { "Content-Type": "application/javascript" });
     res.end(widgetJs);
     return;
+  }
+
+  // The ESM widget bundle is code-split — it imports `./chunk-XXX.js`, `./panel-XXX.js`,
+  // and locale chunks that resolve to /<file>.js from the page, so the test server
+  // must serve every sibling chunk from dist (not just /widget.js).
+  if (/^\/[A-Za-z0-9_-]+\.js(?:\.map)?$/.test(url.pathname)) {
+    const filePath = normalize(join(widgetDistDir, url.pathname));
+    if (filePath.startsWith(widgetDistDir) && existsSync(filePath)) {
+      const isMap = url.pathname.endsWith(".map");
+      res.writeHead(200, {
+        "Content-Type": isMap ? "application/json" : "application/javascript",
+      });
+      res.end(readFileSync(filePath, "utf-8"));
+      return;
+    }
   }
 
   // Serve HTML — accept ?project=xxx for per-browser isolation

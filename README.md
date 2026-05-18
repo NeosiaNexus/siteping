@@ -196,6 +196,44 @@ widget.off('feedback:sent', handler)
 
 ---
 
+## Diagnostics capture
+
+Turn on `captureDiagnostics` and every feedback ships with the last few `console.*` messages and failed network requests (HTTP ≥ 400 or network error). Closes the loop on the dreaded *"this page just doesn't work"* report.
+
+```ts
+initSiteping({
+  endpoint: '/api/siteping',
+  projectName: 'my-project',
+  captureDiagnostics: true,
+})
+```
+
+Or with per-channel control:
+
+```ts
+captureDiagnostics: {
+  console: true,
+  network: true,
+  maxConsoleEntries: 50,   // default
+  maxNetworkEntries: 20,   // default
+}
+```
+
+The reviewer panel shows a collapsible **Diagnostics** section on each feedback that has captured data — colour-coded console levels and a status/method/URL line per failed request.
+
+**Storage migration.** The Prisma schema gains a `diagnostics Json?` column. Existing installs need to re-run the sync:
+
+```bash
+npx siteping sync
+npx prisma db push
+```
+
+The column is nullable so existing rows are unaffected. Hosts who don't want the migration can leave `captureDiagnostics` off — the widget never sends the field and the adapter never asks Prisma to write it.
+
+**Privacy.** Console messages may contain whatever your app logs (user emails, IDs, …). Failed network URLs include the query string but never the response body. Inform end users in environments where they might log sensitive values, or restrict capture to internal builds.
+
+---
+
 ## Notifications
 
 Fire a Slack, Discord, or generic HTTP webhook every time a feedback is created — useful for surfacing client feedback in the team channel without leaving the chat.
@@ -297,6 +335,7 @@ model SitepingFeedback {
   message     String
   status      String   @default("open")
   url         String
+  diagnostics Json?    // captureDiagnostics snapshot — optional
   viewport    String
   userAgent   String
   authorName  String

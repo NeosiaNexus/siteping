@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DemoSite } from "@/components/demo/demo-site";
+import { DiagnosticsTriggers } from "./diagnostics-triggers";
 import { WidgetInit } from "./widget-init";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default function DemoPage() {
     <>
       <WidgetInit />
       <DemoSite />
+      <DiagnosticsTriggers />
     </>
   );
 }
