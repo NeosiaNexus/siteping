@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.9.8](https://github.com/NeosiaNexus/SitePing/compare/widget-v0.9.7...widget-v0.9.8) (2026-05-18)
+
+
+### Features
+
+* **core,widget:** typed error hierarchy with retryable flag ([#76](https://github.com/NeosiaNexus/SitePing/issues/76)) ([f942c58](https://github.com/NeosiaNexus/SitePing/commit/f942c58b0a7d1f765ca92ceeded59c1e34157515))
+* **widget:** add useSiteping() React hook with StrictMode-safe lifecycle ([#72](https://github.com/NeosiaNexus/SitePing/issues/72)) ([6a303e8](https://github.com/NeosiaNexus/SitePing/commit/6a303e8be0e8e0d1a7f41dd546077943741cd0c7))
+* **widget:** capture last 50 console messages + failed network requests with each feedback ([#71](https://github.com/NeosiaNexus/SitePing/issues/71)) ([726e1b8](https://github.com/NeosiaNexus/SitePing/commit/726e1b8a0d4dcef726ec6dc468c168fb73396dbc))
+
+
+### Bug Fixes
+
+* **docs:** correct bundle size claim and remove phantom v1.0.0 section ([#65](https://github.com/NeosiaNexus/SitePing/issues/65)) ([12f12ed](https://github.com/NeosiaNexus/SitePing/commit/12f12ed772c5cff8cd39d5e3a7ae0c12560e6a9c))
+* **widget:** show tooltip on marker focus (WCAG 1.4.13) + harden focus trap ([#73](https://github.com/NeosiaNexus/SitePing/issues/73)) ([ed710e3](https://github.com/NeosiaNexus/SitePing/commit/ed710e3cdf406f7a4854985f0ffc8731fe9acbbf))
+* **widget:** unify i18n across 6 panel modules — DE/ES/IT/PT/RU now fully translated ([1666a6f](https://github.com/NeosiaNexus/SitePing/commit/1666a6f22f0abda3bd360c151d12814393af4aed))
+
+
+### Performance
+
+* **widget:** lazy-load panel and i18n locales (-50% first-paint gzip) ([#68](https://github.com/NeosiaNexus/SitePing/issues/68)) ([fa0a674](https://github.com/NeosiaNexus/SitePing/commit/fa0a674d18078c511b4b9267baa9e793ebb666f3))
+
+
+### Refactoring
+
+* **widget,core:** share SegmentedControl, setButtonLoading, filter logic ([#75](https://github.com/NeosiaNexus/SitePing/issues/75)) ([8cb536b](https://github.com/NeosiaNexus/SitePing/commit/8cb536bca303b82e76a00e461d939da210054714))
+
+
+### Tests
+
+* fix vitest i18n setup (restore green main) ([#80](https://github.com/NeosiaNexus/SitePing/issues/80)) ([f622223](https://github.com/NeosiaNexus/SitePing/commit/f622223d31a79e891918673143660ddb5b1399c3))
+
+
+### Miscellaneous
+
+* biome organize imports ([26d98c5](https://github.com/NeosiaNexus/SitePing/commit/26d98c5984d3e580455ed9acfa0cad367c8d83d7))
+* **deps:** reclassify @medv/finder, widen prisma peer range, harmonize engines ([#74](https://github.com/NeosiaNexus/SitePing/issues/74)) ([b28465d](https://github.com/NeosiaNexus/SitePing/commit/b28465dc762077a535b79dbaffb51faa73f68538))
+
 ## [0.9.7](https://github.com/NeosiaNexus/SitePing/compare/widget-v0.9.6...widget-v0.9.7) (2026-05-06)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.5](https://github.com/NeosiaNexus/SitePing/compare/cli-v0.4.4...cli-v0.4.5) (2026-05-18)
+
+
+### Features
+
+* **widget:** capture last 50 console messages + failed network requests with each feedback ([#71](https://github.com/NeosiaNexus/SitePing/issues/71)) ([726e1b8](https://github.com/NeosiaNexus/SitePing/commit/726e1b8a0d4dcef726ec6dc468c168fb73396dbc))
+
+
+### Miscellaneous
+
+* **deps:** reclassify @medv/finder, widen prisma peer range, harmonize engines ([#74](https://github.com/NeosiaNexus/SitePing/issues/74)) ([b28465d](https://github.com/NeosiaNexus/SitePing/commit/b28465dc762077a535b79dbaffb51faa73f68538))
+
 ## [0.4.4](https://github.com/NeosiaNexus/SitePing/compare/cli-v0.4.3...cli-v0.4.4) (2026-05-06)
 
 
