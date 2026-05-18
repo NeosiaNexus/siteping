@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.7](https://github.com/NeosiaNexus/SitePing/compare/adapter-prisma-v0.4.6...adapter-prisma-v0.4.7) (2026-05-18)
+
+
+### Features
+
+* **adapter-prisma:** webhooks for Slack, Discord, and generic endpoints ([#70](https://github.com/NeosiaNexus/SitePing/issues/70)) ([74a42a7](https://github.com/NeosiaNexus/SitePing/commit/74a42a730dc2ce99de2978d90c378e9794fd1fd5))
+* **widget:** capture last 50 console messages + failed network requests with each feedback ([#71](https://github.com/NeosiaNexus/SitePing/issues/71)) ([726e1b8](https://github.com/NeosiaNexus/SitePing/commit/726e1b8a0d4dcef726ec6dc468c168fb73396dbc))
+
+
+### Bug Fixes
+
+* **adapter-prisma:** require apiKey for DELETE/PATCH in production ([#63](https://github.com/NeosiaNexus/SitePing/issues/63)) ([16df663](https://github.com/NeosiaNexus/SitePing/commit/16df6634100a4669b330e69784a5853bea55367e))
+* **adapter-prisma:** sanitize clientId to prevent path traversal ([#64](https://github.com/NeosiaNexus/SitePing/issues/64)) ([f911e2f](https://github.com/NeosiaNexus/SitePing/commit/f911e2f14efe1e7309cb2053bdb419bbbedc66a8))
+
+
+### Miscellaneous
+
+* **deps:** reclassify @medv/finder, widen prisma peer range, harmonize engines ([#74](https://github.com/NeosiaNexus/SitePing/issues/74)) ([b28465d](https://github.com/NeosiaNexus/SitePing/commit/b28465dc762077a535b79dbaffb51faa73f68538))
+
 ## [0.4.6](https://github.com/NeosiaNexus/SitePing/compare/adapter-prisma-v0.4.5...adapter-prisma-v0.4.6) (2026-05-06)
 
 
