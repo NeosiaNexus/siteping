@@ -89,6 +89,26 @@ export interface SitepingConfig {
     | undefined;
   /** Called when the widget is skipped (production mode, mobile viewport) */
   onSkip?: (reason: "production" | "mobile") => void;
+  /**
+   * Pre-fill author identity from the host application — typically the
+   * currently signed-in user. When set, the widget uses these values
+   * directly and never shows the identity modal, even on first feedback.
+   *
+   * Use case: SSO-integrated apps where the end user is already
+   * authenticated by the host. Avoids the awkward "enter your name and
+   * email" prompt for users the host already knows.
+   *
+   * When unset (default), the widget falls back to localStorage and shows
+   * the modal on first feedback as before — existing behavior unchanged.
+   *
+   * Note: `config.identity` is **not** persisted to localStorage. It is
+   * read at widget init time, not on every render. Hosts that need live
+   * identity updates after sign-in/sign-out should currently remount the
+   * widget (e.g. via a React `key` on the wrapping component). See
+   * https://github.com/NeosiaNexus/SitePing/issues/85 for tracking a
+   * future enhancement that propagates identity updates without a remount.
+   */
+  identity?: { name: string; email: string } | undefined;
 
   // Events
   /** Called when the feedback panel is opened. */
