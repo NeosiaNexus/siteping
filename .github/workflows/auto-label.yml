@@ -1,0 +1,26 @@
+name: Auto-label PRs
+
+# Safe: this workflow does not check out PR code and only passes env vars to a
+# pinned third-party action via its documented inputs. No shell interpolation of
+# untrusted user input (PR title/body) into run: steps.
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: auto-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply labels from PR title
+        uses: srvaroa/labeler@0a20eccb8c94a1ee0bed5f16859aece1c45c3e55 # v1.13.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,30 @@
+name: Sync repository labels
+
+# Safe: only reads a static config file from the repo and forwards it to a
+# pinned action. No untrusted user input is interpolated into run: steps.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.yml
+      - .github/workflows/sync-labels.yml
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync labels
+        uses: crazy-max/ghaction-github-labeler@de749cf181958193cb7debf1a9c5bb28922f3e1b # v5.3.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yml
+          skip-delete: true
+          dry-run: false
