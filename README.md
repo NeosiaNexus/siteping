@@ -212,7 +212,7 @@ initSiteping({
 })
 ```
 
-When `identity` is set, the widget skips both the localStorage lookup and the identity modal — useful when the host already knows who the user is. The value is **not persisted**: pass the current user on every render so the widget always reflects the live signed-in state.
+When `identity` is set, the widget skips both the localStorage lookup and the identity modal — useful when the host already knows who the user is. The value is **not persisted** and is read at widget init time, not on every render. Hosts that need to react to live sign-in/sign-out changes should currently remount the widget (e.g. via a React `key` on the wrapping component). See [#85](https://github.com/NeosiaNexus/SitePing/issues/85) for tracking a future enhancement that propagates identity updates without a remount.
 
 When `identity` is unset (default), the widget falls back to the existing behavior — localStorage first, modal as a last resort.
 

@@ -101,10 +101,12 @@ export interface SitepingConfig {
    * When unset (default), the widget falls back to localStorage and shows
    * the modal on first feedback as before — existing behavior unchanged.
    *
-   * Note: `config.identity` is **not** persisted to localStorage. The host
-   * is the source of truth on every render — if the signed-in user
-   * changes, pass the new identity and the widget uses it without stale
-   * data.
+   * Note: `config.identity` is **not** persisted to localStorage. It is
+   * read at widget init time, not on every render. Hosts that need live
+   * identity updates after sign-in/sign-out should currently remount the
+   * widget (e.g. via a React `key` on the wrapping component). See
+   * https://github.com/NeosiaNexus/SitePing/issues/85 for tracking a
+   * future enhancement that propagates identity updates without a remount.
    */
   identity?: { name: string; email: string } | undefined;
 
