@@ -614,9 +614,9 @@ This project follows the [all-contributors](https://allcontributors.org) specifi
 
 ### Activity
 
-![SitePing activity](https://repobeats.axiom.co/api/embed/REPLACE_WITH_YOUR_REPOBEATS_HASH.svg "Repobeats analytics image")
+![SitePing activity](https://repobeats.axiom.co/api/embed/9ac0c24e3801b4397a9ed90af984dfec23323d1c.svg "Repobeats analytics image")
 
-<sub>Activity graph powered by <a href="https://repobeats.axiom.co">Repobeats</a>. Generate your free embed URL at <a href="https://repobeats.axiom.co">repobeats.axiom.co</a> and replace <code>REPLACE_WITH_YOUR_REPOBEATS_HASH</code> above.</sub>
+<sub>Activity graph powered by <a href="https://repobeats.axiom.co">Repobeats</a>.</sub>
 
 ---
 
