@@ -587,6 +587,39 @@ If you maintain a fork that adds features, opening an upstream PR or even just a
 
 ---
 
+## Contributors
+
+Every line of code, locale, doc fix, and bug report makes SitePing better. Huge thanks to everyone who has shown up — first-time contributors especially.
+
+This project follows the [all-contributors](https://allcontributors.org) specification — every kind of contribution counts ([emoji key](https://allcontributors.org/docs/en/emoji-key)).
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/NeosiaNexus"><img src="https://avatars.githubusercontent.com/u/63867369?v=4?s=100" width="100px;" alt="Olsen Matheo"/><br /><sub><b>Olsen Matheo</b></sub></a><br /><a href="https://github.com/NeosiaNexus/SitePing/commits?author=NeosiaNexus" title="Code">💻</a> <a href="#maintenance-NeosiaNexus" title="Maintenance">🚧</a> <a href="https://github.com/NeosiaNexus/SitePing/commits?author=NeosiaNexus" title="Documentation">📖</a> <a href="#design-NeosiaNexus" title="Design">🎨</a> <a href="#infra-NeosiaNexus" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#ideas-NeosiaNexus" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/NeosiaNexus/SitePing/pulls?q=is%3Apr+reviewed-by%3ANeosiaNexus" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/NeosiaNexus/SitePing/commits?author=NeosiaNexus" title="Tests">⚠️</a> <a href="#projectManagement-NeosiaNexus" title="Project Management">📆</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/alceops"><img src="https://avatars.githubusercontent.com/u/278831803?v=4?s=100" width="100px;" alt="Alce"/><br /><sub><b>Alce</b></sub></a><br /><a href="https://github.com/NeosiaNexus/SitePing/commits?author=alceops" title="Code">💻</a> <a href="#translation-alceops" title="Translation">🌍</a> <a href="https://github.com/NeosiaNexus/SitePing/commits?author=alceops" title="Tests">⚠️</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/reikjarloekl"><img src="https://avatars.githubusercontent.com/u/839540?v=4?s=100" width="100px;" alt="Jörn Bungartz"/><br /><sub><b>Jörn Bungartz</b></sub></a><br /><a href="https://github.com/NeosiaNexus/SitePing/issues?q=author%3Areikjarloekl" title="Bug reports">🐛</a> <a href="https://github.com/NeosiaNexus/SitePing/commits?author=reikjarloekl" title="Code">💻</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+> Want to be in this list? Code, docs, translations, bug reports, design ideas — all count. See [CONTRIBUTING.md](./CONTRIBUTING.md) to get started. The [@all-contributors](https://allcontributors.org/docs/en/bot/usage) bot can add you automatically when a maintainer comments `@all-contributors please add @your-username for code, doc`.
+
+### Activity
+
+![SitePing activity](https://repobeats.axiom.co/api/embed/REPLACE_WITH_YOUR_REPOBEATS_HASH.svg "Repobeats analytics image")
+
+<sub>Activity graph powered by <a href="https://repobeats.axiom.co">Repobeats</a>. Generate your free embed URL at <a href="https://repobeats.axiom.co">repobeats.axiom.co</a> and replace <code>REPLACE_WITH_YOUR_REPOBEATS_HASH</code> above.</sub>
+
+---
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=NeosiaNexus/SitePing&type=Date)](https://star-history.com/#NeosiaNexus/SitePing&Date)

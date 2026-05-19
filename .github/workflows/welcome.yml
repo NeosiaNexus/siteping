@@ -1,0 +1,44 @@
+name: Welcome new contributors
+
+# Safe: this workflow only sends a static greeting via the official
+# actions/first-interaction action. No untrusted user input (PR/issue title,
+# body, head ref, ...) is ever interpolated into a shell `run:` step.
+
+on:
+  pull_request_target:
+    types: [opened]
+  issues:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Greet first-time contributors
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            👋 Welcome to **SitePing**, and thanks for opening your first issue!
+
+            A few quick things that help us help you faster:
+
+            - Make sure the issue title is **descriptive** (e.g. `widget: marker tooltip disappears on focus` rather than `bug`).
+            - If it's a bug, include a **reproduction** (CodeSandbox, minimal repo, or numbered steps) and the package + version (`@siteping/widget`, `@siteping/adapter-prisma`, …).
+            - If it's a feature, describe the **use case** before the implementation — it helps us pick the right shape for the API.
+
+            We try to triage within a few days. In the meantime, browse [`good first issue`](https://github.com/NeosiaNexus/SitePing/labels/good%20first%20issue) if you'd like to ship a fix yourself. 🚀
+          pr-message: |
+            🎉 **Welcome, new contributor!** Thanks for your first pull request to SitePing — this is genuinely exciting.
+
+            A few things to know:
+
+            - We use **Conventional Commits** for PR titles (e.g. `feat(widget): …`, `fix(adapter-prisma): …`). The auto-labeller reads the prefix to categorise your work in the next release.
+            - CI runs **typecheck + tests + Playwright E2E** — give it a few minutes to go green.
+            - Once merged, you'll appear in the next [release notes](https://github.com/NeosiaNexus/SitePing/releases) under **New Contributors**, and a maintainer will add you to our [Contributors](https://github.com/NeosiaNexus/SitePing#contributors) table.
+
+            If something feels off in the review, push back — your perspective is welcome. Thanks again for showing up. 💚

@@ -1,0 +1,48 @@
+changelog:
+  exclude:
+    labels:
+      - autorelease: pending
+      - autorelease: tagged
+      - ignore-for-release
+    authors:
+      - dependabot
+      - dependabot[bot]
+      - github-actions
+      - github-actions[bot]
+      - renovate[bot]
+  categories:
+    - title: "🚀 Features"
+      labels:
+        - feature
+        - enhancement
+        - feat
+    - title: "🐛 Bug Fixes"
+      labels:
+        - bug
+        - fix
+    - title: "⚡ Performance"
+      labels:
+        - performance
+        - perf
+    - title: "♻️ Refactoring"
+      labels:
+        - refactor
+    - title: "🧪 Tests"
+      labels:
+        - test
+        - tests
+    - title: "📚 Documentation"
+      labels:
+        - documentation
+        - docs
+    - title: "🌍 Locales & i18n"
+      labels:
+        - i18n
+        - locale
+        - translation
+    - title: "📦 Dependencies"
+      labels:
+        - dependencies
+    - title: "🧰 Other Changes"
+      labels:
+        - "*"

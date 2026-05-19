@@ -1,0 +1,46 @@
+{
+  "projectName": "SitePing",
+  "projectOwner": "NeosiaNexus",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": ["README.md"],
+  "imageSize": 100,
+  "commit": false,
+  "commitConvention": "angular",
+  "contributorsPerLine": 7,
+  "contributorsSortAlphabetically": false,
+  "skipCi": true,
+  "contributors": [
+    {
+      "login": "NeosiaNexus",
+      "name": "Olsen Matheo",
+      "avatar_url": "https://avatars.githubusercontent.com/u/63867369?v=4",
+      "profile": "https://github.com/NeosiaNexus",
+      "contributions": [
+        "code",
+        "maintenance",
+        "doc",
+        "design",
+        "infra",
+        "ideas",
+        "review",
+        "test",
+        "projectManagement"
+      ]
+    },
+    {
+      "login": "alceops",
+      "name": "Alce",
+      "avatar_url": "https://avatars.githubusercontent.com/u/278831803?v=4",
+      "profile": "https://github.com/alceops",
+      "contributions": ["code", "translation", "test"]
+    },
+    {
+      "login": "reikjarloekl",
+      "name": "Jörn Bungartz",
+      "avatar_url": "https://avatars.githubusercontent.com/u/839540?v=4",
+      "profile": "https://github.com/reikjarloekl",
+      "contributions": ["bug", "code"]
+    }
+  ]
+}
