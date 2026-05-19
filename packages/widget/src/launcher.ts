@@ -493,11 +493,11 @@ export function launch(config: SitepingConfig): SitepingInstance {
       }
     },
     focusFeedback: (feedbackId: string) => {
-      // Delegate to MarkerManager — returns false when no entry matches
-      // (unknown ID, feedback on another URL when `scopeAnnotationsByUrl`
-      // filtered it out, or markers not yet loaded). Hosts driving focus
-      // from a notification handler can either wait for `feedback:sent`
-      // (rare race) or accept the false return and retry.
+      // Returns false when no entry matches — unknown ID, feedback filtered
+      // out by `scopeAnnotationsByUrl`, or markers not yet loaded (the
+      // initial getFeedbacks is async, and the widget exposes no public
+      // "markers ready" event today). Hosts that race against initial load
+      // can retry, or trigger focus from a user gesture instead.
       return markers.focusFeedback(feedbackId);
     },
     refresh: () => {
